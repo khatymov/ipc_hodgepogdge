@@ -1,1 +1,1 @@
-Hello world!
+C++ compiles directly to a machine's native code, allowing it to be one of the fastest languages in the world, if optimized. ...is a strongly-typed unsafe language. C++ is a language that expects the programmer to know what he or she is doing, but allows for incredible amounts of control as a result.
