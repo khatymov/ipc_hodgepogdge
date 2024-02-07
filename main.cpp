@@ -14,6 +14,8 @@
 #include <unistd.h>          /* ftruncate */
 #include <thread>
 
+#include <queue>
+
 #include <semaphore.h>
 #include <cstdlib>
 #include <functional>
@@ -37,77 +39,137 @@ public:
 char semaphore_path_1[] = "/tmp_named_sem_1";
 char semaphore_path_2[] = "/tmp_named_sem_2";
 
-enum Label
+/*! \class BufferMode
+ * \brief Choose current mode: write or read
+ */
+enum class BufferMode : int
 {
-    Server,
-    Client
+    read,
+    write
 };
+
+
+using BufferIndex = std::pair<Buffer*,uint8_t>;
 
 class BufferRotator
 {
+    BufferRotator (const BufferRotator&) = delete;
+    BufferRotator (BufferRotator&&) = delete;
+    BufferRotator& operator = (const BufferRotator&) = delete;
+    BufferRotator& operator = (BufferRotator &&) = delete;
 public:
+    BufferRotator(Buffer* shared_buffers_ptr, sem_t* semaphore_1, sem_t* semaphore_2)
+        :_sem_1(semaphore_1)
+        ,_sem_2(semaphore_2)
+    //Почему я здесь принимаю указатель на буфер, а не просто адрес, полученный с помощью mmap. Ответ - нам нужно,
+    // чтобы new (&buffer_ptr[i]) Buffer() вызывался единожды, и отвественный за это - Writer. Поэтому в BufferRotator
+    // мы получаем готовый указатель, когда new placement уже произошло
+    {
+        _read_buffers->push(BufferIndex(shared_buffers_ptr, 0));
+        _read_buffers->push(BufferIndex(shared_buffers_ptr, 1));
+    }
 
+    //! \brief get buffer according to buffer mode (from  _read_buffers or _write_buffers)
+    BufferIndex* get_available_buffer(const BufferMode mode)
+    {
+        //в зависимости от типа получить буфер либо из очереди на чтение,
+        //либо на запись
+        BufferIndex* data = nullptr;
+        std::queue<BufferIndex>* current_queue = _get_buffer_from_queue(mode);
+
+        if (mode == BufferMode::write)
+        {
+            if (sem_wait(_sem_1) == -1)
+            {
+                std::cerr << "Mode::write if (sem_wait(_semaphore_1) == -1)"  << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        else if (mode == BufferMode::read)
+        {
+            if (sem_post(_sem_1) == -1)
+            {
+                std::cerr << "BufferMode::read if (sem_post(_shared_semaphore_1) == -1)"  << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            if (sem_wait(_sem_2) == -1)
+            {
+                std::cerr << "BufferMode::read if (sem_wait(_shared_semaphore_2) == -1)"  << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        if (current_queue->size())
+        {
+            data = &current_queue->front();
+            current_queue->pop();
+        }
+
+        if (mode == BufferMode::write)
+        {
+            if (sem_post(_sem_2) == -1)
+            {
+                std::cerr << "S if (sem_post(_shared_semaphore_1) == -1)" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        return data;
+    }
+
+
+    void transfer_buffer_to(BufferIndex& buffer_data, const BufferMode mode)
+    {
+        if (mode == BufferMode::write)
+        {
+            if (sem_wait(_sem_1) == -1)
+            {
+                std::cerr << "Mode::write if (sem_wait(_semaphore_1) == -1)"  << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        else if (mode == BufferMode::read)
+        {
+            if (sem_post(_sem_1) == -1)
+            {
+                std::cerr << "BufferMode::read if (sem_post(_shared_semaphore_1) == -1)"  << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            if (sem_wait(_sem_2) == -1)
+            {
+                std::cerr << "BufferMode::read if (sem_wait(_shared_semaphore_2) == -1)"  << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        std::queue<BufferIndex>* current_queue = _get_buffer_from_queue(mode);
+
+        current_queue->push(buffer_data);
+
+
+        if (mode == BufferMode::write)
+        {
+            if (sem_post(_sem_2) == -1)
+            {
+                std::cerr << "S if (sem_post(_shared_semaphore_1) == -1)" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 
 private:
+    sem_t* _sem_1;
+    sem_t* _sem_2;
+    //! \brief queues with buffers
+    std::queue<BufferIndex>* _read_buffers;
+    std::queue<BufferIndex>* _write_buffers;
 
-
-};
-
-class SemaphoreHandler{
-public:
-    SemaphoreHandler(const Label label)
+    std::queue<BufferIndex>* _get_buffer_from_queue(const BufferMode mode)
     {
-        std::cout << "SemaphoreHandler" << std::endl;
-        if (label == Label::Server)
-        {
-            _shared_semaphore = sem_open(semaphore_path_1, O_CREAT, 0644, 0);
-            std::cout << "Server, create semaphore" << std::endl;
-        }
-        // means client
-        else
-        {
-            // Где гарантия, что клиент первым не попытается окрыть семафор, которого не существует
-            _shared_semaphore = sem_open(semaphore_path_1, 0, 0644, 0);
-            std::cout << "Client, use existing semaphore" << std::endl;
-        }
-
-        if(_shared_semaphore == (void*) -1){
-            std::cerr << "sem_open failure"  << std::endl;
-            exit(EXIT_FAILURE);
-        }
-//        int value;
-//        sem_getvalue(_shared_semaphore, &value);
-//        std::cout << "sem_getvalue = " << value << std::endl;
-        std::cout << "errno = " << errno << "Description: " << strerror(errno) << std::endl;
-        std::cout << "SEM_FAILED = " << SEM_FAILED << std::endl;
-        std::cout << "EEXIST = " << EEXIST << std::endl;
+        return mode == BufferMode::read ? _read_buffers : _write_buffers;
     }
-
-    ~SemaphoreHandler()
-    {
-        std::cout << "~SemaphoreHandler" << std::endl;
-        sem_close(_shared_semaphore);
-        sem_unlink(semaphore_path_1);
-    }
-
-    auto post()
-    {
-//        int value;
-//        sem_getvalue(_shared_semaphore, &value);
-//        std::cout << "sem_getvalue = " << value << std::endl;
-        return sem_post(_shared_semaphore);
-    }
-
-    auto wait()
-    {
-//        int value;
-//        sem_getvalue(_shared_semaphore, &value);
-//        std::cout << "sem_getvalue = " << value << std::endl;
-        return sem_wait(_shared_semaphore);
-    }
-
-private:
-    sem_t * _shared_semaphore;
 };
 
 int main(int argc, char* argv[])
