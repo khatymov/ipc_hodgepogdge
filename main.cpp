@@ -19,7 +19,7 @@
 #include <functional>
 namespace fs = std::filesystem;
 
-#define STORAGE_SIZE 4088
+#define STORAGE_SIZE 24
 
 class Buffer {
 public:
@@ -41,6 +41,16 @@ enum Label
 {
     Server,
     Client
+};
+
+class BufferRotator
+{
+public:
+
+
+private:
+
+
 };
 
 class SemaphoreHandler{
@@ -171,8 +181,11 @@ int main(int argc, char* argv[])
         // пока кол-во прочитанных байт != 0
         // The abbreviation  "rb"  includes the representation of binary mode, as denoted by  b  code.
         std::FILE* read_file = std::fopen(source_path.data(), "rb");
-        Buffer* buffer = new (addr) Buffer;
-        std::cout << "Server: Initial size of data: " << buffer->size << " | Data: " << buffer->data << std::endl;
+//        Buffer buffers[2];
+        Buffer* buffer_ptr = static_cast<Buffer*>(addr);
+        new (&buffer_ptr[0]) Buffer();
+        new (&buffer_ptr[1]) Buffer();
+        std::cout << "Server: Initial size of data: " << buffer_ptr->size << " | Data: " << buffer_ptr->data << std::endl;
 //        SemaphoreHandler semaphore_handler(Label::Server);
         sem_t* _shared_semaphore_1 = sem_open(semaphore_path_1, O_CREAT, 0644, 0);
         sem_t* _shared_semaphore_2 = sem_open(semaphore_path_2, O_CREAT, 0644, 0);
@@ -199,8 +212,9 @@ int main(int argc, char* argv[])
                 exit(EXIT_FAILURE);
             }
 
-            buffer->size = std::fread(&buffer->data, sizeof(char), STORAGE_SIZE, read_file);
-            const bool everything_done = buffer->size == 0;
+            buffer_ptr[0].size = std::fread(&buffer_ptr[0].data, sizeof(char), STORAGE_SIZE, read_file);
+            buffer_ptr[1].size = std::fread(&buffer_ptr[1].data, sizeof(char), STORAGE_SIZE, read_file);
+            const bool everything_done = buffer_ptr[0].size == 0 or buffer_ptr[1].size == 0;
 
             if (sem_post(_shared_semaphore_2) == -1)
             {
@@ -242,8 +256,9 @@ int main(int argc, char* argv[])
                 return EXIT_FAILURE;
             }
 
-            Buffer* buffer = static_cast<Buffer*>(addr);
-            std::cout << "Client: Initial size of data: " << buffer->size << " | Data: " << buffer->data << std::endl;
+            Buffer* buffer_ptr = static_cast<Buffer*>(addr);
+//            Buffer buffer_ptr[2];
+            std::cout << "Client: Initial size of data: " << buffer_ptr->size << " | Data: " << buffer_ptr->data << std::endl;
 //            SemaphoreHandler semaphore_handler(Label::Client);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             sem_t* _shared_semaphore_1 = sem_open(semaphore_path_1, 0, 0644, 0);
@@ -263,7 +278,6 @@ int main(int argc, char* argv[])
 
             std::FILE* write_file = std::fopen(target_path.data(), "w");
 
-
             while (true)
             {
                 if (sem_post(_shared_semaphore_1) == -1)
@@ -278,14 +292,25 @@ int main(int argc, char* argv[])
                     exit(EXIT_FAILURE);
                 }
 
-                auto cur_size = buffer->size;
+                auto cur_size_1 = buffer_ptr[0].size;
 
-                for (int i = 0; i < buffer->size; i++)
-                    std::cout << buffer->data[i];
+                std::cout << "Client, first buffer_ptr:" << std::endl;
+                for (int i = 0; i < buffer_ptr[0].size; i++)
+                    std::cout << buffer_ptr[0].data[i];
 
-                fwrite(buffer->data, sizeof(char), buffer->size, write_file);
+                fwrite(buffer_ptr[0].data, sizeof(char), buffer_ptr[0].size, write_file);
 
-                if (cur_size == 0)
+                if (cur_size_1 == 0)
+                    break;
+
+                auto cur_size_2 = buffer_ptr[1].size;
+                std::cout << "Client, second buffer_ptr:" << std::endl;
+                for (int i = 0; i < buffer_ptr[1].size; i++)
+                    std::cout << buffer_ptr[1].data[i];
+
+                fwrite(buffer_ptr[1].data, sizeof(char), buffer_ptr[1].size, write_file);
+
+                if (cur_size_2 == 0)
                     break;
             }
 
