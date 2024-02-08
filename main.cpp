@@ -21,7 +21,7 @@
 #include <functional>
 namespace fs = std::filesystem;
 
-#define STORAGE_SIZE 24
+#define STORAGE_SIZE 4096
 
 class Buffer {
 public:
@@ -36,9 +36,10 @@ public:
     char data[STORAGE_SIZE];
 };
 
-char semaphore_path_1[] = "/tmp_named_sem_1";
-char semaphore_path_2[] = "/tmp_named_sem_2";
-
+char semaphore_path_0_0[] = "/tmp_sem_0_0_aaa";
+char semaphore_path_0_1[] = "/tmp_sem_0_1_aaa";
+char semaphore_path_1_0[] = "/tmp_sem_1_0_aaa";
+char semaphore_path_1_1[] = "/tmp_sem_1_1_aaa";
 /*! \class BufferMode
  * \brief Choose current mode: write or read
  */
@@ -49,7 +50,18 @@ enum class BufferMode : int
 };
 
 
-using BufferIndex = std::pair<Buffer*,uint8_t>;
+//using BufferIndex = std::pair<Buffer*,uint8_t>;
+
+struct BufferIndex
+{
+    BufferIndex() = default;
+    BufferIndex(Buffer* buffer_, uint8_t buffer_index_)
+        :buffer(buffer_)
+        ,buffer_index(buffer_index_)
+    {}
+    Buffer* buffer;
+    uint8_t buffer_index;
+};
 
 class BufferRotator
 {
@@ -58,118 +70,86 @@ class BufferRotator
     BufferRotator& operator = (const BufferRotator&) = delete;
     BufferRotator& operator = (BufferRotator &&) = delete;
 public:
-    BufferRotator(Buffer* shared_buffers_ptr, sem_t* semaphore_1, sem_t* semaphore_2)
-        :_sem_1(semaphore_1)
-        ,_sem_2(semaphore_2)
-    //Почему я здесь принимаю указатель на буфер, а не просто адрес, полученный с помощью mmap. Ответ - нам нужно,
+    BufferRotator(BufferMode mode, Buffer* shared_buffers_ptr, sem_t* sem_0_0, sem_t* sem_0_1, sem_t* sem_1_0, sem_t* sem_1_1)
+        : _sem_0_0(sem_0_0)
+        , _sem_0_1(sem_0_1)
+        , _sem_1_0(sem_1_0)
+        , _sem_1_1(sem_1_1)
+        , _mmap_buffer(shared_buffers_ptr)
+    // Почему я здесь принимаю указатель на буфер, а не просто адрес, полученный с помощью mmap. Ответ - нам нужно,
     // чтобы new (&buffer_ptr[i]) Buffer() вызывался единожды, и отвественный за это - Writer. Поэтому в BufferRotator
     // мы получаем готовый указатель, когда new placement уже произошло
     {
-        _read_buffers->push(BufferIndex(shared_buffers_ptr, 0));
-        _read_buffers->push(BufferIndex(shared_buffers_ptr, 1));
+        if (BufferMode::write == mode)
+        {
+            new (&_mmap_buffer[0]) Buffer();
+            new (&_mmap_buffer[1]) Buffer();
+        }
     }
 
     //! \brief get buffer according to buffer mode (from  _read_buffers or _write_buffers)
-    BufferIndex* get_available_buffer(const BufferMode mode)
+    Buffer* get_buffer(const BufferMode mode, const uint index) const
     {
-        //в зависимости от типа получить буфер либо из очереди на чтение,
-        //либо на запись
-        BufferIndex* data = nullptr;
-        std::queue<BufferIndex>* current_queue = _get_buffer_from_queue(mode);
-
         if (mode == BufferMode::write)
         {
-            if (sem_wait(_sem_1) == -1)
-            {
-                std::cerr << "Mode::write if (sem_wait(_semaphore_1) == -1)"  << std::endl;
-                exit(EXIT_FAILURE);
-            }
+            return &_mmap_buffer[index];
         }
-        else if (mode == BufferMode::read)
+
+        if (mode == BufferMode::read)
         {
-            if (sem_post(_sem_1) == -1)
+            if (index == 0)
             {
-                std::cerr << "BufferMode::read if (sem_post(_shared_semaphore_1) == -1)"  << std::endl;
-                exit(EXIT_FAILURE);
+                sem_post(_sem_0_0);
+                sem_wait(_sem_0_1);
+                return &_mmap_buffer[index];
             }
 
-            if (sem_wait(_sem_2) == -1)
+            if (index == 1)
             {
-                std::cerr << "BufferMode::read if (sem_wait(_shared_semaphore_2) == -1)"  << std::endl;
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        if (current_queue->size())
-        {
-            data = &current_queue->front();
-            current_queue->pop();
-        }
-
-        if (mode == BufferMode::write)
-        {
-            if (sem_post(_sem_2) == -1)
-            {
-                std::cerr << "S if (sem_post(_shared_semaphore_1) == -1)" << std::endl;
-                exit(EXIT_FAILURE);
+                sem_post(_sem_1_0);
+                sem_wait(_sem_1_1);
+                return &_mmap_buffer[index];
             }
         }
 
-        return data;
+        return nullptr;
     }
 
 
-    void transfer_buffer_to(BufferIndex& buffer_data, const BufferMode mode)
+    void notify(const BufferMode mode, const uint index) const
     {
-        if (mode == BufferMode::write)
+        if (mode == BufferMode::read)
         {
-            if (sem_wait(_sem_1) == -1)
+            if (index == 0)
             {
-                std::cerr << "Mode::write if (sem_wait(_semaphore_1) == -1)"  << std::endl;
-                exit(EXIT_FAILURE);
+                sem_wait(_sem_0_0);
+                sem_post(_sem_0_1);
+                return;
+            }
+
+            if (index == 1)
+            {
+                sem_wait(_sem_1_0);
+                sem_post(_sem_1_1);
+                return;
             }
         }
-        else if (mode == BufferMode::read)
-        {
-            if (sem_post(_sem_1) == -1)
-            {
-                std::cerr << "BufferMode::read if (sem_post(_shared_semaphore_1) == -1)"  << std::endl;
-                exit(EXIT_FAILURE);
-            }
-
-            if (sem_wait(_sem_2) == -1)
-            {
-                std::cerr << "BufferMode::read if (sem_wait(_shared_semaphore_2) == -1)"  << std::endl;
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        std::queue<BufferIndex>* current_queue = _get_buffer_from_queue(mode);
-
-        current_queue->push(buffer_data);
+    }
 
 
-        if (mode == BufferMode::write)
-        {
-            if (sem_post(_sem_2) == -1)
-            {
-                std::cerr << "S if (sem_post(_shared_semaphore_1) == -1)" << std::endl;
-                exit(EXIT_FAILURE);
-            }
-        }
+    ~BufferRotator()
+    {
+
     }
 
 private:
-    sem_t* _sem_1;
-    sem_t* _sem_2;
-    //! \brief queues with buffers
-    std::queue<BufferIndex>* _read_buffers;
-    std::queue<BufferIndex>* _write_buffers;
+    sem_t* _sem_0_0;
+    sem_t* _sem_0_1;
+    sem_t* _sem_1_0;
+    sem_t* _sem_1_1;
 
-    std::queue<BufferIndex>* _get_buffer_from_queue(const BufferMode mode)
-    {
-        return mode == BufferMode::read ? _read_buffers : _write_buffers;
-    }
+
+    Buffer* _mmap_buffer;
 };
 
 int main(int argc, char* argv[])
@@ -219,7 +199,7 @@ int main(int argc, char* argv[])
         // устанавливаем размер общей памяти на основе page-aligned (4KB)
         // extend shared memory object as by default it's initialized
         //  with size 0
-        int res = ftruncate(fd_read, STORAGE_SIZE);
+        int res = ftruncate(fd_read, STORAGE_SIZE * 2 + 16);
         if (res == -1)
         {
             std::cerr << "Server: Error during truncate memory" << std::endl;
@@ -229,7 +209,7 @@ int main(int argc, char* argv[])
         // ссылаемся на указанную общую память-на адресное пространство процесса
         // ч/з дескриптор
         //https://man7.org/linux/man-pages/man2/mmap.2.html
-        void *addr = mmap(NULL, STORAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_read, 0);
+        void *addr = mmap(NULL, STORAGE_SIZE * 2 + 16, PROT_READ | PROT_WRITE, MAP_SHARED, fd_read, 0);
         if (addr == MAP_FAILED)
         {
             std::cerr << "Server: Error mapping memory " << std::endl;
@@ -245,43 +225,61 @@ int main(int argc, char* argv[])
         std::FILE* read_file = std::fopen(source_path.data(), "rb");
 //        Buffer buffers[2];
         Buffer* buffer_ptr = static_cast<Buffer*>(addr);
-        new (&buffer_ptr[0]) Buffer();
-        new (&buffer_ptr[1]) Buffer();
+
         std::cout << "Server: Initial size of data: " << buffer_ptr->size << " | Data: " << buffer_ptr->data << std::endl;
 //        SemaphoreHandler semaphore_handler(Label::Server);
-        sem_t* _shared_semaphore_1 = sem_open(semaphore_path_1, O_CREAT, 0644, 0);
-        sem_t* _shared_semaphore_2 = sem_open(semaphore_path_2, O_CREAT, 0644, 0);
+        sem_t* _semaphore_0_0 = sem_open(semaphore_path_0_0, O_CREAT, 0644, 0);
+        sem_t* _semaphore_0_1 = sem_open(semaphore_path_0_1, O_CREAT, 0644, 0);
+        sem_t* _semaphore_1_0 = sem_open(semaphore_path_1_0, O_CREAT, 0644, 0);
+        sem_t* _semaphore_1_1 = sem_open(semaphore_path_1_1, O_CREAT, 0644, 0);
 
         std::cout << "Server, create semaphore" << std::endl;
 
-        if (_shared_semaphore_1 == (void*) -1)
-        {
-            std::cerr << "sem_open 1 failure"  << std::endl;
-            exit(EXIT_FAILURE);
-        }
-
-        if (_shared_semaphore_2 == (void*) -1)
+        if (_semaphore_0_0 == (void*) -1)
         {
             std::cerr << "sem_open 2 failure"  << std::endl;
             exit(EXIT_FAILURE);
         }
 
+        if (_semaphore_0_1 == (void*) -1)
+        {
+            std::cerr << "sem_open 1 failure"  << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        if (_semaphore_1_0 == (void*) -1)
+        {
+            std::cerr << "sem_open 2 failure"  << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        if (_semaphore_1_1 == (void*) -1)
+        {
+            std::cerr << "sem_open 1 failure"  << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+
+
+        BufferRotator bufferRotator(BufferMode::write, buffer_ptr, _semaphore_0_0, _semaphore_0_1, _semaphore_1_0, _semaphore_1_1);
+        Buffer* buffer;
+        uint index = 0;
         do
         {
-            if (sem_wait(_shared_semaphore_1) == -1)
+            buffer = bufferRotator.get_buffer(BufferMode::write, index);
+
+            buffer->size = std::fread(&buffer->data, sizeof(char), STORAGE_SIZE, read_file);
+
+            const bool everything_done = buffer->size == 0;
+
+            bufferRotator.notify(BufferMode::read, index);
+
+            if (index == 0)
             {
-                std::cerr << "S if (sem_wait(_shared_semaphore_1) == -1)"  << std::endl;
-                exit(EXIT_FAILURE);
+                index++;
             }
-
-            buffer_ptr[0].size = std::fread(&buffer_ptr[0].data, sizeof(char), STORAGE_SIZE, read_file);
-            buffer_ptr[1].size = std::fread(&buffer_ptr[1].data, sizeof(char), STORAGE_SIZE, read_file);
-            const bool everything_done = buffer_ptr[0].size == 0 or buffer_ptr[1].size == 0;
-
-            if (sem_post(_shared_semaphore_2) == -1)
-            {
-                std::cerr << "S if (sem_post(_shared_semaphore_1) == -1)"  << std::endl;
-                exit(EXIT_FAILURE);
+            else {
+                index--;
             }
 
             if (everything_done)
@@ -289,8 +287,11 @@ int main(int argc, char* argv[])
 
         } while (true);
 
-        sem_close(_shared_semaphore_1);
-        sem_close(_shared_semaphore_2);
+        sem_close(_semaphore_0_0);
+        sem_close(_semaphore_0_1);
+        sem_close(_semaphore_1_0);
+        sem_close(_semaphore_1_1);
+
 
         fclose(read_file);
         // Unmap the memory when done
@@ -311,7 +312,7 @@ int main(int argc, char* argv[])
         {
             // ссылаемся на указанную общую память-на адресное пространство процесса
             // ч/з дескриптор
-            void *addr = mmap(NULL, STORAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_write, 0);
+            void *addr = mmap(NULL, STORAGE_SIZE * 2 + 16, PROT_READ | PROT_WRITE, MAP_SHARED, fd_write, 0);
             if (addr == MAP_FAILED)
             {
                 std::cerr << "Client:Error mapping memory " << std::endl;
@@ -323,63 +324,108 @@ int main(int argc, char* argv[])
             std::cout << "Client: Initial size of data: " << buffer_ptr->size << " | Data: " << buffer_ptr->data << std::endl;
 //            SemaphoreHandler semaphore_handler(Label::Client);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            sem_t* _shared_semaphore_1 = sem_open(semaphore_path_1, 0, 0644, 0);
-            sem_t* _shared_semaphore_2 = sem_open(semaphore_path_2, 0, 0644, 0);
-            std::cout << "Client, use existing semaphore" << std::endl;
-            if (_shared_semaphore_1 == (void*) -1)
+
+
+            sem_t* _semaphore_0_0 = sem_open(semaphore_path_0_0, 0, 0644, 0);
+            sem_t* _semaphore_0_1 = sem_open(semaphore_path_0_1, 0, 0644, 0);
+            sem_t* _semaphore_1_0 = sem_open(semaphore_path_1_0, 0, 0644, 0);
+            sem_t* _semaphore_1_1 = sem_open(semaphore_path_1_1, 0, 0644, 0);
+
+            while (_semaphore_0_0 == nullptr)
+            {
+                std::cout << "Client, can't attach to existing semaphore 1, try again" << std::endl;
+                std::this_thread::yield();
+                _semaphore_0_0 = sem_open(semaphore_path_0_0, 0, 0644, 0);
+            }
+            if (_semaphore_0_0 == (void*) -1)
             {
                 std::cerr << "sem_open 1 failure"  << std::endl;
                 exit(EXIT_FAILURE);
             }
 
-            if (_shared_semaphore_2 == (void*) -1)
+
+            while (_semaphore_0_1 == nullptr)
             {
-                std::cerr << "sem_open 2 failure"  << std::endl;
+                std::cout << "Client, can't attach to existing semaphore 1, try again" << std::endl;
+                std::this_thread::yield();
+                _semaphore_0_1 = sem_open(semaphore_path_0_1, 0, 0644, 0);
+            }
+            if (_semaphore_0_1 == (void*) -1)
+            {
+                std::cerr << "sem_open 1 failure"  << std::endl;
                 exit(EXIT_FAILURE);
             }
 
+
+            while (_semaphore_1_0 == nullptr)
+            {
+                std::cout << "Client, can't attach to existing semaphore 1, try again" << std::endl;
+                std::this_thread::yield();
+                _semaphore_1_0 = sem_open(semaphore_path_1_0, 0, 0644, 0);
+            }
+            if (_semaphore_1_0 == (void*) -1)
+            {
+                std::cerr << "sem_open 1 failure"  << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            while (_semaphore_1_1 == nullptr)
+            {
+                std::cout << "Client, can't attach to existing semaphore 1, try again" << std::endl;
+                std::this_thread::yield();
+                _semaphore_1_1 = sem_open(semaphore_path_1_1, 0, 0644, 0);
+            }
+            if (_semaphore_1_1 == (void*) -1)
+            {
+                std::cerr << "sem_open 1 failure"  << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            std::cout << "Client, use existing semaphores" << std::endl;
+
+            BufferRotator bufferRotator(BufferMode::read, buffer_ptr, _semaphore_0_0, _semaphore_0_1, _semaphore_1_0, _semaphore_1_1);
+
             std::FILE* write_file = std::fopen(target_path.data(), "w");
 
+
+            std::cout << "Client, Start processing" << std::endl;
+            Buffer* buffer;
+            uint i = 0;
+            uint index = 0;
             while (true)
             {
-                if (sem_post(_shared_semaphore_1) == -1)
+                buffer = bufferRotator.get_buffer(BufferMode::read, index);
+
+                auto cur_size = buffer->size;
+
+                std::cout << "Client iteration: " << i++ << std::endl;
+//                for (int i = 0; i < buffer->size; i++)
+//                    std::cout << buffer->data[i];
+
+                fwrite(buffer->data, sizeof(char), buffer->size, write_file);
+
+                bufferRotator.notify(BufferMode::write, index);
+
+                if (index == 0)
                 {
-                    std::cerr << "C if (sem_post(_shared_semaphore_1) == -1)"  << std::endl;
-                    exit(EXIT_FAILURE);
+                    index++;
                 }
-
-                if (sem_wait(_shared_semaphore_2) == -1)
-                {
-                    std::cerr << "C if (sem_wait(_shared_semaphore_2) == -1)"  << std::endl;
-                    exit(EXIT_FAILURE);
+                else {
+                    index--;
                 }
-
-                auto cur_size_1 = buffer_ptr[0].size;
-
-                std::cout << "Client, first buffer_ptr:" << std::endl;
-                for (int i = 0; i < buffer_ptr[0].size; i++)
-                    std::cout << buffer_ptr[0].data[i];
-
-                fwrite(buffer_ptr[0].data, sizeof(char), buffer_ptr[0].size, write_file);
-
-                if (cur_size_1 == 0)
-                    break;
-
-                auto cur_size_2 = buffer_ptr[1].size;
-                std::cout << "Client, second buffer_ptr:" << std::endl;
-                for (int i = 0; i < buffer_ptr[1].size; i++)
-                    std::cout << buffer_ptr[1].data[i];
-
-                fwrite(buffer_ptr[1].data, sizeof(char), buffer_ptr[1].size, write_file);
-
-                if (cur_size_2 == 0)
+                if (cur_size == 0)
                     break;
             }
 
-            sem_close(_shared_semaphore_1);
-            sem_close(_shared_semaphore_2);
-            sem_unlink(semaphore_path_1);
-            sem_unlink(semaphore_path_2);
+            std::cout << "Client, Finish processing" << std::endl;
+            sem_close(_semaphore_0_0);
+            sem_close(_semaphore_0_1);
+            sem_close(_semaphore_1_0);
+            sem_close(_semaphore_1_1);
+            sem_unlink(semaphore_path_0_0);
+            sem_unlink(semaphore_path_0_1);
+            sem_unlink(semaphore_path_1_0);
+            sem_unlink(semaphore_path_1_1);
             fclose(write_file);
             // Unmap the memory when done
             if (munmap(addr, STORAGE_SIZE) == -1) {
