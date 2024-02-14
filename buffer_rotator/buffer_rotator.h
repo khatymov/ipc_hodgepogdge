@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <semaphore.h>
+
 #include <string>
 
 #include "buffer.h"
@@ -25,7 +25,7 @@ class BufferRotator
 public:
 
     //! \brief default constructor.
-    BufferRotator(Buffer* buffer_ptr, const std::string& shared_memory_name);
+    BufferRotator(const BufferMode& mode, Buffer* buffer_ptr, const std::string& shared_memory_name);
 
     //! \brief default destructor.
     ~BufferRotator() = default;
@@ -34,5 +34,6 @@ public:
 private:
 
     //! List of private variables.
-
+    SemaphoreHandler semaphore_handler[2];
+    Buffer* buffer;
 };

@@ -17,7 +17,7 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
     const auto shared_name = get_unique_shared_name(source_path, target_path);
 
     // https://man7.org/linux/man-pages/man3/shm_open.3.html
-    // TODO: fix magic number
+    // TODO: change magic number
     const int file_descriptor = shm_open(shared_name.data(), O_CREAT | O_EXCL | O_RDWR | O_TRUNC, 0600);
 
     // __________________________________________________________________________________________
@@ -47,9 +47,9 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
         }
 
         FileHandler read_file(source_path.data(), "rb");
-        //        Buffer* buffer_ptr = static_cast<Buffer*>(map_addr);
-        //
-        //        BufferRotator bufferRotator();
+        Buffer* buffer_ptr = static_cast<Buffer*>(map_addr);
+
+        BufferRotator bufferRotator(BufferMode::write, buffer_ptr, shared_name.data());
         //
         //        uint index = 0;
         //        do
@@ -104,8 +104,8 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
 
             FileHandler write_file(target_path.data(), "w");
 
-            //            Buffer* buffer_ptr = static_cast<Buffer*>(mmap_addr);
-            //            BufferRotator bufferRotator();
+            Buffer* buffer_ptr = static_cast<Buffer*>(mmap_addr);
+            BufferRotator bufferRotator(BufferMode::write, buffer_ptr, shared_name.data());
             //            uint i = 0;
             //            uint index = 0;
             //            while (true)
