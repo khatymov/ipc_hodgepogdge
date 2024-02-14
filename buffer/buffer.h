@@ -16,7 +16,7 @@
 #include <time.h>
 #include <errno.h>
 
-#define STORAGE_SIZE 4096
+#define STORAGE_SIZE 24
 
 /*! \struct Buffer
  * \brief Buffer for any type of data, including binary
@@ -106,6 +106,9 @@ public:
     ~SemaphoreHandler()
     {
         _close_semaphores();
+        //TODO: handle a proper way to unlink. Should be done once, for the entity, that created the semaphore
+        sem_unlink(_sem_ready_path.c_str());
+        sem_unlink(_sem_ack_path.c_str());
     }
 
 
@@ -150,7 +153,7 @@ public:
         if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
             handle_error("clock_gettime");
 
-        ts.tv_sec += 10;  // Wait for up to 5 seconds
+        ts.tv_sec += 1;  // Wait for up to 5 seconds
 
         if (mode == BufferMode::write)
         {
@@ -179,10 +182,11 @@ public:
                     _close_semaphores();
                     exit(EXIT_FAILURE);
                 }
-            } else
-            {
-                std::cout << "BufferMode::write sem_timedwait() succeeded" << std::endl;
             }
+//            else
+//            {
+//                std::cout << "BufferMode::write sem_timedwait() succeeded" << std::endl;
+//            }
         } else if (mode == BufferMode::read)
         {
             std::cout << "BufferMode::read" << std::endl;
@@ -200,10 +204,11 @@ public:
                     _close_semaphores();
                     exit(EXIT_FAILURE);
                 }
-            } else
-            {
-                std::cout << "BufferMode::read sem_timedwait() succeeded" << std::endl;
             }
+//            else
+//            {
+//                std::cout << "BufferMode::read sem_timedwait() succeeded" << std::endl;
+//            }
 
             sem_post(_sem_ack);
         }
@@ -219,8 +224,5 @@ private:
     {
         sem_close(_sem_ready);
         sem_close(_sem_ack);
-        //TODO: handle a proper way to unlink. Should be done once, for the entity, that created the semaphore
-        sem_unlink(_sem_ready_path.c_str());
-        sem_unlink(_sem_ack_path.c_str());
     }
 };

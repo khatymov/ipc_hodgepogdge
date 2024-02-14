@@ -24,13 +24,19 @@ BufferRotator::BufferRotator(const BufferMode& mode, Buffer* buffer_ptr, const s
 
 Buffer* BufferRotator::get_buffer(const BufferMode& mode, const int index)
 {
-    Buffer* buffer = nullptr;
-    buffer = &_buffer[index];
-
-
-    return buffer;
+//    Buffer* buffer = nullptr;
+//    buffer = &_buffer[index];
+    return &_buffer[index];
 }
 
 void BufferRotator::notify_buffer_is_ready(const BufferMode& mode, const int index)
 {
+    if (index == 0)
+    {
+        _semaphore_handler_0.do_ping_pong(mode);
+    }
+    else if (index == 1)
+    {
+        _semaphore_handler_1.do_ping_pong(mode);
+    }
 }

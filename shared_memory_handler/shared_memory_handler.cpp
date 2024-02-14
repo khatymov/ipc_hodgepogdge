@@ -52,29 +52,32 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
         BufferRotator bufferRotator(BufferMode::write, buffer_ptr, shared_name.data());
 
         uint index = 0;
-//        do
-//        {
-//            buffer_ptr = bufferRotator.get_buffer(BufferMode::write, index);
-//
-////            buffer_ptr->size = std::fread(&buffer_ptr->data, sizeof(char), STORAGE_SIZE, read_file);
-//            read_file.fread(buffer_ptr);
-//
-//            const bool everything_done = buffer_ptr->size == 0;
-//
-//            bufferRotator.notify_buffer_is_ready(BufferMode::write, index);
-//
-////            if (index == 0)
-////            {
-////                index++;
-////            }
-////            else {
-////                index--;
-////            }
-//
-//            if (everything_done)
-//                break;
-//
-//        } while (true);
+        do
+        {
+            buffer_ptr = bufferRotator.get_buffer(BufferMode::write, index);
+
+            read_file.fread(buffer_ptr);
+
+            const bool everything_done = buffer_ptr->size == 0;
+
+            std::cout << "Server bufferRotator.notify_buffer_is_ready(BufferMode::write, index);" << std::endl;
+            bufferRotator.notify_buffer_is_ready(BufferMode::write, index);
+
+            std::cout << "Server bufferRotator.notify_buffer_is_ready(BufferMode::read, index);" << std::endl;
+            bufferRotator.notify_buffer_is_ready(BufferMode::read, index);
+
+//            if (index == 0)
+//            {
+//                index++;
+//            }
+//            else {
+//                index--;
+//            }
+
+            if (everything_done)
+                break;
+
+        } while (true);
 
         if (munmap(map_addr, mmap_size) == -1)
         {
@@ -82,7 +85,7 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
         }
 
         shm_unlink(shared_name.data());
-
+        std::cout << "Server finished" << std::endl;
         return true;
     }
     /*
@@ -110,38 +113,37 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
 
             uint i = 0;
             uint index = 0;
-//            while (true)
-//            {
-//                buffer_ptr = bufferRotator.get_buffer(BufferMode::read, index);
-//
-//                auto cur_size = buffer_ptr->size;
-//
-//                std::cout << "Client iteration: " << i++ << std::endl;
-//
-//                write_file.fwrite(buffer_ptr);
-////                fwrite(buffer_ptr->data, sizeof(char), buffer_ptr->size, write_file);
-//
-//                bufferRotator.notify_buffer_is_ready(BufferMode::read, index);
-//
-////                if (index == 0)
-////                {
-////                    index++;
-////                }
-////                else {
-////                    index--;
-////                }
-//                if (cur_size == 0)
-//                    break;
-//            }
+            while (true)
+            {
+                std::cout << "Client bufferRotator.notify_buffer_is_ready(BufferMode::read, index);" << std::endl;
+                bufferRotator.notify_buffer_is_ready(BufferMode::read, index);
+
+                buffer_ptr = bufferRotator.get_buffer(BufferMode::read, index);
+                write_file.fwrite(buffer_ptr);
+                auto cur_size = buffer_ptr->size;
+
+                std::cout << "Client iteration: " << i++ << std::endl;
+
+                std::cout << "Client bufferRotator.notify_buffer_is_ready(BufferMode::write, index);" << std::endl;
+                bufferRotator.notify_buffer_is_ready(BufferMode::write, index);
+
+//                if (index == 0)
+//                {
+//                    index++;
+//                }
+//                else {
+//                    index--;
+//                }
+                if (cur_size == 0)
+                    break;
+            }
 
             // Unmap the memory when done
             if (munmap(mmap_addr, mmap_size) == -1)
             {
                 std::cerr << "Client: Error unmapping memory " << std::endl;
             }
-
-            const auto cmd = std::string("diff ") + source_path.data() + " " + target_path.data() + std::string("| exit $(wc -l)");
-            return (std::system(cmd.c_str()) == 0);
+            std::cout << "Client finished" << std::endl;
         }
         else
         {
@@ -149,7 +151,8 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
         }
     }
 
-    return false;
+    const auto cmd = std::string("diff ") + source_path.data() + " " + target_path.data() + std::string("| exit $(wc -l)");
+    return (std::system(cmd.c_str()) == 0);
 }
 
 std::string SharedMemoryHandler::get_unique_shared_name(const string_view& source_path, const string_view& target_path)
