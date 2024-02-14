@@ -30,10 +30,14 @@ public:
     //! \brief default destructor.
     ~BufferRotator() = default;
 
+    Buffer* get_buffer(const BufferMode& mode, const int index);
+
+    void notify_buffer_is_ready(const BufferMode& mode, const int index);
 
 private:
 
     //! List of private variables.
-    SemaphoreHandler semaphore_handler[2];
-    Buffer* buffer;
+    SemaphoreHandler _semaphore_handler_0;
+    SemaphoreHandler _semaphore_handler_1;
+    Buffer* _buffer;
 };

@@ -1,4 +1,4 @@
-/*! \file buffer.h
+/*! \file _buffer.h
  * \brief Buffer class interface.
  *
  * Class description.
@@ -39,21 +39,30 @@ enum class BufferMode : int
 
 //TODO: delete
 #include <thread>
+#define handle_error(msg) \
+           do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+//static void handler(int sig, sem_t* sem)
+//{
+//    write(STDOUT_FILENO, "sem_post() from handler\n", 24);
+//    if (sem_post(&sem) == -1) {
+//        write(STDERR_FILENO, "sem_post() failed\n", 18);
+//        _exit(EXIT_FAILURE);
+//    }
+//}
 
 class SemaphoreHandler
 {
 public:
-
-    SemaphoreHandler() = default;
-
     SemaphoreHandler(const std::string& shared_object_name, uint8_t index)
     {
         _sem_ready_path = shared_object_name + std::string("_ready_") + std::to_string(index);
         _sem_ack_path = shared_object_name + std::string("_ack_") + std::to_string(index);
+
         std::cout << "_sem_ready_path: " << _sem_ready_path << std::endl;
         std::cout << "_sem_ack_path: " << _sem_ack_path << std::endl;
-        _sem_ready = sem_open(_sem_ready_path.c_str(), O_CREAT | O_EXCL, 0644, 0);
 
+        _sem_ready = sem_open(_sem_ready_path.c_str(), O_CREAT | O_EXCL, 0644, 0);
         _sem_ack = sem_open(_sem_ack_path.c_str(), O_CREAT | O_EXCL, 0644, 0);
 
         if (_sem_ready == nullptr)
@@ -76,7 +85,7 @@ public:
 
         if ((res_sem_ready_val = sem_getvalue(_sem_ready, &sem_ready_val) == -1) or (res_sem_ack_val = sem_getvalue(_sem_ack, &sem_ack_val) == -1))
         {
-            std::cerr << "Can get a semaphore value." << std::endl;
+            std::cerr << "Can't get a semaphore value." << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -85,21 +94,18 @@ public:
 
         if (sem_ready_val > 1 or sem_ack_val > 1)
         {
+//            sem_wait(_sem_ready);
+//            sem_wait(_sem_ack);
+            sem_close(_sem_ready);
+            sem_close(_sem_ack);
             std::cout << "Reached max number of clients. Exit" << std::endl;
             exit(EXIT_SUCCESS);
         }
-
-
-        std::this_thread::sleep_for(std::chrono::seconds(20));
     }
 
     ~SemaphoreHandler()
     {
-        sem_close(_sem_ready);
-        sem_close(_sem_ack);
-        //TODO: handle a proper way to unlink. Should be done once, for the entity, that created the semaphore
-        sem_unlink(_sem_ready_path.c_str());
-        sem_unlink(_sem_ack_path.c_str());
+        _close_semaphores();
     }
 
 
@@ -122,8 +128,8 @@ public:
             else
             {
                 std::cout << "Semaphore attached: " << path << std::endl;
-                // increment semaphore value to notify, that one client has already attached
-                sem_post(sem);
+                // increment semaphore value to do_ping_pong, that one client has already attached
+//                sem_post(sem);
                 return sem;
             }
         }
@@ -135,51 +141,68 @@ public:
         }
     }
 
-    void notify(const BufferMode& mode)
+    void do_ping_pong(const BufferMode& mode)
     {
         //!!! be sure that semaphores values are 0
 
         //TODO find a location for this var
         struct timespec ts;
-        ts.tv_sec += 5;  // Wait for up to 5 seconds
+        if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            handle_error("clock_gettime");
+
+        ts.tv_sec += 10;  // Wait for up to 5 seconds
 
         if (mode == BufferMode::write)
         {
-            printf("BufferMode::write\n");
+            std::cout << "BufferMode::write" << std::endl;
+            if (_sem_ready == nullptr)
+            {
+                std::cerr << "The semaphore is nullptr." << std::endl;
+            }
+
+            if (_sem_ready == (void *) - 1)
+            {
+                std::cerr << "The semaphore is -1." << std::endl;
+            }
+
             sem_post(_sem_ready);
             int sem_wd_res = sem_timedwait(_sem_ack, &ts);
             if (sem_wd_res == -1) {
                 if (errno == ETIMEDOUT)
                 {
-                    printf("BufferMode::write sem_timedwait() timed out\n");
+                    std::cout << "BufferMode::write sem_timedwait() timed out"<< std::endl;
+                    _close_semaphores();
                     exit(EXIT_FAILURE);
                 } else
                 {
-                    perror("BufferMode::write sem_timedwait");
+                    std::cerr << "BufferMode::write sem_timedwait" << std::endl;
+                    _close_semaphores();
                     exit(EXIT_FAILURE);
                 }
             } else
             {
-                printf("BufferMode::write sem_timedwait() succeeded\n");
+                std::cout << "BufferMode::write sem_timedwait() succeeded" << std::endl;
             }
         } else if (mode == BufferMode::read)
         {
-            printf("BufferMode::read\n");
+            std::cout << "BufferMode::read" << std::endl;
             int sem_wd_res = sem_timedwait(_sem_ready, &ts);
             if (sem_wd_res == -1) {
                 if (errno == ETIMEDOUT)
                 {
-                    printf("BufferMode::read sem_timedwait() timed out\n");
+                    std::cout << "BufferMode::read sem_timedwait() timed out" << std::endl;
+                    _close_semaphores();
                     exit(EXIT_FAILURE);
                 }
                 else
                 {
-                    perror("BufferMode::read sem_timedwait");
+                    std::cerr << "BufferMode::read sem_timedwait" << std::endl;
+                    _close_semaphores();
                     exit(EXIT_FAILURE);
                 }
             } else
             {
-                printf("BufferMode::read sem_timedwait() succeeded\n");
+                std::cout << "BufferMode::read sem_timedwait() succeeded" << std::endl;
             }
 
             sem_post(_sem_ack);
@@ -191,4 +214,13 @@ private:
     sem_t* _sem_ack;
     std::string _sem_ready_path;
     std::string _sem_ack_path;
+
+    void _close_semaphores()
+    {
+        sem_close(_sem_ready);
+        sem_close(_sem_ack);
+        //TODO: handle a proper way to unlink. Should be done once, for the entity, that created the semaphore
+        sem_unlink(_sem_ready_path.c_str());
+        sem_unlink(_sem_ack_path.c_str());
+    }
 };

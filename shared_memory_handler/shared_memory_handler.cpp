@@ -21,7 +21,7 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
     const int file_descriptor = shm_open(shared_name.data(), O_CREAT | O_EXCL | O_RDWR | O_TRUNC, 0600);
 
     // __________________________________________________________________________________________
-    // | buffer_size(8 byte) | buffer[STORAGE_SIZE] | buffer_size(8 byte) | buffer[STORAGE_SIZE] |
+    // | buffer_size(8 byte) | _buffer[STORAGE_SIZE] | buffer_size(8 byte) | _buffer[STORAGE_SIZE] |
     // ------------------------------------------------------------------------------------------
     const size_t mmap_size = STORAGE_SIZE * 2 + sizeof(size_t) * 2;
 
@@ -50,30 +50,31 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
         Buffer* buffer_ptr = static_cast<Buffer*>(map_addr);
 
         BufferRotator bufferRotator(BufferMode::write, buffer_ptr, shared_name.data());
-        //
-        //        uint index = 0;
-        //        do
-        //        {
-        //            buffer_ptr = bufferRotator.get_buffer(BufferMode::write, index);
-        //
-        //            buffer_ptr->size = std::fread(&buffer_ptr->data, sizeof(char), STORAGE_SIZE, read_file);
-        //
-        //            const bool everything_done = buffer_ptr->size == 0;
-        //
-        //            bufferRotator.notify(BufferMode::read, index);
-        //
-        //            if (index == 0)
-        //            {
-        //                index++;
-        //            }
-        //            else {
-        //                index--;
-        //            }
-        //
-        //            if (everything_done)
-        //                break;
-        //
-        //        } while (true);
+
+        uint index = 0;
+//        do
+//        {
+//            buffer_ptr = bufferRotator.get_buffer(BufferMode::write, index);
+//
+////            buffer_ptr->size = std::fread(&buffer_ptr->data, sizeof(char), STORAGE_SIZE, read_file);
+//            read_file.fread(buffer_ptr);
+//
+//            const bool everything_done = buffer_ptr->size == 0;
+//
+//            bufferRotator.notify_buffer_is_ready(BufferMode::write, index);
+//
+////            if (index == 0)
+////            {
+////                index++;
+////            }
+////            else {
+////                index--;
+////            }
+//
+//            if (everything_done)
+//                break;
+//
+//        } while (true);
 
         if (munmap(map_addr, mmap_size) == -1)
         {
@@ -105,31 +106,33 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
             FileHandler write_file(target_path.data(), "w");
 
             Buffer* buffer_ptr = static_cast<Buffer*>(mmap_addr);
-            BufferRotator bufferRotator(BufferMode::write, buffer_ptr, shared_name.data());
-            //            uint i = 0;
-            //            uint index = 0;
-            //            while (true)
-            //            {
-            //                buffer_ptr = bufferRotator.get_buffer(BufferMode::read, index);
-            //
-            //                auto cur_size = buffer_ptr->size;
-            //
-            //                std::cout << "Client iteration: " << i++ << std::endl;
-            //
-            //                fwrite(buffer_ptr->data, sizeof(char), buffer_ptr->size, write_file);
-            //
-            //                bufferRotator.notify(BufferMode::write, index);
-            //
-            //                if (index == 0)
-            //                {
-            //                    index++;
-            //                }
-            //                else {
-            //                    index--;
-            //                }
-            //                if (cur_size == 0)
-            //                    break;
-            //            }
+            BufferRotator bufferRotator(BufferMode::read, buffer_ptr, shared_name.data());
+
+            uint i = 0;
+            uint index = 0;
+//            while (true)
+//            {
+//                buffer_ptr = bufferRotator.get_buffer(BufferMode::read, index);
+//
+//                auto cur_size = buffer_ptr->size;
+//
+//                std::cout << "Client iteration: " << i++ << std::endl;
+//
+//                write_file.fwrite(buffer_ptr);
+////                fwrite(buffer_ptr->data, sizeof(char), buffer_ptr->size, write_file);
+//
+//                bufferRotator.notify_buffer_is_ready(BufferMode::read, index);
+//
+////                if (index == 0)
+////                {
+////                    index++;
+////                }
+////                else {
+////                    index--;
+////                }
+//                if (cur_size == 0)
+//                    break;
+//            }
 
             // Unmap the memory when done
             if (munmap(mmap_addr, mmap_size) == -1)

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(my_project LANGUAGES CXX)
+project(server LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 

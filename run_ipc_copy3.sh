@@ -1,5 +1,5 @@
 #!/bin/bash
-
-args="../data/source.txt ../data/target29.txt"
+app="./server"
+args="../data/source.txt ../data/target70.txt"
 cd ./cmake-build-debug/
-./my_project $args & ./my_project $args & ./my_project $args
+$app $args & $app $args & $app $args
