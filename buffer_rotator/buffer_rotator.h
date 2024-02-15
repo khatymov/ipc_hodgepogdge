@@ -30,7 +30,7 @@ public:
     //! \brief default destructor.
     ~BufferRotator() = default;
 
-    Buffer* get_buffer(const BufferMode& mode, const int index);
+    Buffer* get_buffer(const int index);
 
     void notify_buffer_is_ready(const BufferMode& mode, const int index);
 

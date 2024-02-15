@@ -33,8 +33,8 @@ struct Buffer
  */
 enum class BufferMode : int
 {
-    read,
-    write
+    wait,
+    ready_to_read
 };
 
 //TODO: delete
@@ -106,9 +106,7 @@ public:
     ~SemaphoreHandler()
     {
         _close_semaphores();
-        //TODO: handle a proper way to unlink. Should be done once, for the entity, that created the semaphore
-        sem_unlink(_sem_ready_path.c_str());
-        sem_unlink(_sem_ack_path.c_str());
+
     }
 
 
@@ -153,21 +151,11 @@ public:
         if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
             handle_error("clock_gettime");
 
-        ts.tv_sec += 1;  // Wait for up to 5 seconds
+        ts.tv_sec += 60;  // Wait for up to 5 seconds
 
-        if (mode == BufferMode::write)
+        if (mode == BufferMode::ready_to_read)
         {
             std::cout << "BufferMode::write" << std::endl;
-            if (_sem_ready == nullptr)
-            {
-                std::cerr << "The semaphore is nullptr." << std::endl;
-            }
-
-            if (_sem_ready == (void *) - 1)
-            {
-                std::cerr << "The semaphore is -1." << std::endl;
-            }
-
             sem_post(_sem_ready);
             int sem_wd_res = sem_timedwait(_sem_ack, &ts);
             if (sem_wd_res == -1) {
@@ -187,7 +175,7 @@ public:
 //            {
 //                std::cout << "BufferMode::write sem_timedwait() succeeded" << std::endl;
 //            }
-        } else if (mode == BufferMode::read)
+        } else if (mode == BufferMode::wait)
         {
             std::cout << "BufferMode::read" << std::endl;
             int sem_wd_res = sem_timedwait(_sem_ready, &ts);
@@ -224,5 +212,8 @@ private:
     {
         sem_close(_sem_ready);
         sem_close(_sem_ack);
+        //TODO: handle a proper way to unlink. Should be done once, for the entity, that created the semaphore
+        sem_unlink(_sem_ready_path.c_str());
+        sem_unlink(_sem_ack_path.c_str());
     }
 };

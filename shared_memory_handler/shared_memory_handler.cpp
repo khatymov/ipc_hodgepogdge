@@ -49,22 +49,24 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
         FileHandler read_file(source_path.data(), "rb");
         Buffer* buffer_ptr = static_cast<Buffer*>(map_addr);
 
-        BufferRotator bufferRotator(BufferMode::write, buffer_ptr, shared_name.data());
+        BufferRotator bufferRotator(BufferMode::ready_to_read, buffer_ptr, shared_name.data());
 
         uint index = 0;
         do
         {
-            buffer_ptr = bufferRotator.get_buffer(BufferMode::write, index);
+
+            std::cout << "Server index = " << index << std::endl;
+            buffer_ptr = bufferRotator.get_buffer(index);
 
             read_file.fread(buffer_ptr);
 
             const bool everything_done = buffer_ptr->size == 0;
 
             std::cout << "Server bufferRotator.notify_buffer_is_ready(BufferMode::write, index);" << std::endl;
-            bufferRotator.notify_buffer_is_ready(BufferMode::write, index);
+            bufferRotator.notify_buffer_is_ready(BufferMode::ready_to_read, index);
 
             std::cout << "Server bufferRotator.notify_buffer_is_ready(BufferMode::read, index);" << std::endl;
-            bufferRotator.notify_buffer_is_ready(BufferMode::read, index);
+            bufferRotator.notify_buffer_is_ready(BufferMode::wait, index);
 
 //            if (index == 0)
 //            {
@@ -109,23 +111,25 @@ bool SharedMemoryHandler::copy(const string_view& source_path, const string_view
             FileHandler write_file(target_path.data(), "w");
 
             Buffer* buffer_ptr = static_cast<Buffer*>(mmap_addr);
-            BufferRotator bufferRotator(BufferMode::read, buffer_ptr, shared_name.data());
+            BufferRotator bufferRotator(BufferMode::wait, buffer_ptr, shared_name.data());
 
             uint i = 0;
             uint index = 0;
             while (true)
             {
+                std::cout << "Client index = " << index << std::endl;
                 std::cout << "Client bufferRotator.notify_buffer_is_ready(BufferMode::read, index);" << std::endl;
-                bufferRotator.notify_buffer_is_ready(BufferMode::read, index);
+                bufferRotator.notify_buffer_is_ready(BufferMode::wait, index);
 
-                buffer_ptr = bufferRotator.get_buffer(BufferMode::read, index);
+                buffer_ptr = bufferRotator.get_buffer(index);
+                std::cout << "Client data: " << buffer_ptr->data << std::endl;
                 write_file.fwrite(buffer_ptr);
                 auto cur_size = buffer_ptr->size;
 
                 std::cout << "Client iteration: " << i++ << std::endl;
 
                 std::cout << "Client bufferRotator.notify_buffer_is_ready(BufferMode::write, index);" << std::endl;
-                bufferRotator.notify_buffer_is_ready(BufferMode::write, index);
+                bufferRotator.notify_buffer_is_ready(BufferMode::ready_to_read, index);
 
 //                if (index == 0)
 //                {

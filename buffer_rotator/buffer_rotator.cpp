@@ -12,20 +12,15 @@ BufferRotator::BufferRotator(const BufferMode& mode, Buffer* buffer_ptr, const s
     ,_semaphore_handler_0(SemaphoreHandler(shared_memory_name, 0))
     ,_semaphore_handler_1(SemaphoreHandler(shared_memory_name, 1))
 {
-    if (BufferMode::write == mode)
+    if (BufferMode::ready_to_read == mode)
     {
         new (&_buffer[0]) Buffer();
         new (&_buffer[1]) Buffer();
     }
-
-    _semaphore_handler_0.do_ping_pong(mode);
-    _semaphore_handler_1.do_ping_pong(mode);
 }
 
-Buffer* BufferRotator::get_buffer(const BufferMode& mode, const int index)
+Buffer* BufferRotator::get_buffer(const int index)
 {
-//    Buffer* buffer = nullptr;
-//    buffer = &_buffer[index];
     return &_buffer[index];
 }
 
