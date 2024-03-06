@@ -13,6 +13,7 @@ namespace fs = std::filesystem;
 // TODO delete. only for testing
 #include "semaphore_proxy/semaphore_proxy.h"
 #include "shared_memory_handler.h"
+#include "synchronizer.h"
 
 int main(int argc, char* argv[])
 {
@@ -43,7 +44,7 @@ int main(int argc, char* argv[])
 
     Timer timer;
 
-    //    // Testing
+    // Testing
     //    SemaphoreProxy semReadyWriter(true, SharedMemoryHandler::get_unique_shared_name(source_path, target_path), "semReady");
     //    SemaphoreProxy semReadyReader(false, SharedMemoryHandler::get_unique_shared_name(source_path, target_path), "semReady");
     //
@@ -58,6 +59,38 @@ int main(int argc, char* argv[])
     //
     //    semReadyReader.set_signaled();
     //    if (semReadyWriter.get_signaled())
+    //    {
+    //        std::cout << "sem works" << std::endl;
+    //    }
+    //    else
+    //    {
+    //        std::cerr << "sem doesn't work" << std::endl;
+    //    }
+
+    //    Synchronizer w_synchronizer(true, SharedMemoryHandler::get_unique_shared_name(source_path, target_path));
+    //    Synchronizer r_synchronizer(false, SharedMemoryHandler::get_unique_shared_name(source_path, target_path));
+    //
+    //    r_synchronizer.sem_ready.set_signaled();
+    //    if (w_synchronizer.sem_ready.get_signaled())
+    //    {
+    //        std::cout << "sem works" << std::endl;
+    //    }
+    //    else
+    //    {
+    //        std::cerr << "sem doesn't work" << std::endl;
+    //    }
+
+    //    if (!w_synchronizer.sem_ready.get_signaled())
+    //    {
+    //        std::cout << "sem works" << std::endl;
+    //    }
+    //    else
+    //    {
+    //        std::cerr << "sem doesn't work" << std::endl;
+    //    }
+    //
+    //    w_synchronizer.sem_ack.set_signaled();
+    //    if (r_synchronizer.sem_ack.get_signaled())
     //    {
     //        std::cout << "sem works" << std::endl;
     //    }

@@ -10,6 +10,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/app/timer/timer.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/app/file_handler/file_handler.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/app/buffer/buffer.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/app/synchronizer/synchronizer.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/app/shared_memory_facade/shared_memory_facade.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/shared_memory_handler/shared_memory_handler.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/buffer_rotator/buffer_rotator.cmake)
 
@@ -22,7 +23,7 @@ add_executable(${PROJECT_NAME}
         ${BUFFER}
         ${SHARED_MEMORY_HANDLER}
         ${BUFFER_ROTATOR}
-
+        ${SHARED_MEMORY_FACADE}
 )
 
 target_link_libraries(${PROJECT_NAME} -lrt -pthread)
