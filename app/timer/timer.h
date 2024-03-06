@@ -9,11 +9,13 @@
 
 class Timer
 {
+    Timer(const Timer&) = delete;
+    Timer(Timer&&) = delete;
+    Timer& operator=(const Timer&) = delete;
+    Timer& operator=(Timer&&) = delete;
+
 public:
     Timer();
-    Timer(const Timer&) = delete;
-    Timer& operator=(const Timer&) = delete;
-
     ~Timer();
 
 private:
