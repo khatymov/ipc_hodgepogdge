@@ -6,7 +6,6 @@
 #include <iostream>
 #include <span>
 
-#include "shared_memory_handler.h"
 #include "timer.h"
 
 namespace fs = std::filesystem;
@@ -38,11 +37,6 @@ int main(int argc, char* argv[])
     }
 
     Timer timer;
-
-    if (!SharedMemoryHandler::copy(source_path, target_path))
-    {
-        std::cerr << "Error copying file." << std::endl;
-    }
 
     return 0;
 }
