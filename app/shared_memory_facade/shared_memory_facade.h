@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <string>
 /*! \class SharedMemoryFacade
  * \brief Some briefing
  */
@@ -18,12 +19,20 @@ class SharedMemoryFacade
     SharedMemoryFacade& operator=(SharedMemoryFacade&&) = delete;
 
 public:
-    //! \brief default constructor.
-    SharedMemoryFacade();
+    //! \brief constructor.
+    SharedMemoryFacade(const std::string_view& source_path, const std::string_view& target_path);
 
-    //! \brief default destructor.
-    ~SharedMemoryFacade() = default;
+    //! \brief destructor.
+    ~SharedMemoryFacade();
+
+    bool is_writer();
+
+    void* get_shared_mem_addr();
 
 private:
     //! List of private variables.
+    bool _is_writer;
+    size_t _mmap_size;
+    void* _shared_mem_ptr;
+    std::string _shared_object_name;
 };

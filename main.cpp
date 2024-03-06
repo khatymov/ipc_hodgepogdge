@@ -12,6 +12,7 @@ namespace fs = std::filesystem;
 
 // TODO delete. only for testing
 #include "semaphore_proxy/semaphore_proxy.h"
+#include "shared_memory_facade.h"
 #include "shared_memory_handler.h"
 #include "synchronizer.h"
 
@@ -98,6 +99,8 @@ int main(int argc, char* argv[])
     //    {
     //        std::cerr << "sem doesn't work" << std::endl;
     //    }
+
+    SharedMemoryFacade sharedMemoryFacade(source_path, target_path);
 
     return 0;
 }
