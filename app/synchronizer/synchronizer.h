@@ -21,10 +21,14 @@ class Synchronizer
 
 public:
     //! \brief default constructor.
-    Synchronizer();
+    Synchronizer(bool is_writer, const std::string& shared_mem_name);
 
     //! \brief default destructor.
     ~Synchronizer() = default;
+
+    //! List of public variables.
+    SemaphoreProxy sem_ready;
+    SemaphoreProxy sem_ack;
 
 private:
     //! List of private variables.
