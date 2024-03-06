@@ -10,8 +10,13 @@
 
 namespace fs = std::filesystem;
 
+// TODO delete. only for testing
+#include "semaphore_proxy/semaphore_proxy.h"
+#include "shared_memory_handler.h"
+
 int main(int argc, char* argv[])
 {
+
     if (argc < 3)
     {
         std::cout << "Usage: ./cpp_course path_to_source path_to_target." << std::endl;
@@ -37,6 +42,29 @@ int main(int argc, char* argv[])
     }
 
     Timer timer;
+
+    //    // Testing
+    //    SemaphoreProxy semReadyWriter(true, SharedMemoryHandler::get_unique_shared_name(source_path, target_path), "semReady");
+    //    SemaphoreProxy semReadyReader(false, SharedMemoryHandler::get_unique_shared_name(source_path, target_path), "semReady");
+    //
+    //    if (!semReadyWriter.get_signaled())
+    //    {
+    //        std::cout << "sem works" << std::endl;
+    //    }
+    //    else
+    //    {
+    //        std::cerr << "sem doesn't work" << std::endl;
+    //    }
+    //
+    //    semReadyReader.set_signaled();
+    //    if (semReadyWriter.get_signaled())
+    //    {
+    //        std::cout << "sem works" << std::endl;
+    //    }
+    //    else
+    //    {
+    //        std::cerr << "sem doesn't work" << std::endl;
+    //    }
 
     return 0;
 }
