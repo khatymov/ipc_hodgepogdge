@@ -24,7 +24,7 @@ class FileHandler
 
 public:
     //! \brief default constructor.
-    explicit FileHandler(const std::string& file_name, const std::string& flags);
+    explicit FileHandler(const std::string& file_name, const bool is_writer);
 
     void fread(Buffer* buffer);
 

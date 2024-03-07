@@ -4,8 +4,19 @@
 
 #include "file_handler.h"
 
-FileHandler::FileHandler(const std::string& file_name, const std::string& flags)
+FileHandler::FileHandler(const std::string& file_name, const bool is_writer)
 {
+    std::string flags;
+    
+    if (is_writer)
+    {
+        flags = "w";
+    }
+    else
+    {
+        flags = "rb";
+    }
+
     _file = std::fopen(file_name.data(), flags.data());
 }
 

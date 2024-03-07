@@ -7,6 +7,12 @@
 
 #pragma once
 
+#include <string_view>
+
+#include "file_handler.h"
+#include "shared_memory_facade.h"
+#include "synchronizer.h"
+
 /*! \class Copier
  * \brief Some briefing
  */
@@ -19,7 +25,7 @@ class Copier
 
 public:
     //! \brief default constructor.
-    Copier();
+    Copier(const std::string_view& source_path, const std::string_view& target_path);
 
     //! \brief default destructor.
     ~Copier() = default;
@@ -30,4 +36,14 @@ public:
 
 private:
     //! List of private variables.
+    SharedMemoryFacade _sharedMemoryFacade;
+    bool _is_writer;
+    FileHandler _file;
+    Synchronizer _synchronizer;
+
+    const std::string_view& _source_path;
+    const std::string_view& _target_path;
+
+    void _read_from_file_to_shared_memory();
+    void _write_to_file_from_shared_memory();
 };
