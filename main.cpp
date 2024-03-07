@@ -11,6 +11,7 @@
 namespace fs = std::filesystem;
 
 // TODO delete. only for testing
+#include "copier.h"
 #include "semaphore_proxy/semaphore_proxy.h"
 #include "shared_memory_facade.h"
 #include "shared_memory_handler.h"
