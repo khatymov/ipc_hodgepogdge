@@ -15,10 +15,13 @@ using namespace std;
 SharedMemoryFacade::SharedMemoryFacade(const std::string_view& source_path, const std::string_view& target_path)
 {
     _shared_object_name = get_unique_shared_name(source_path, target_path);
-
+    // TODO delete
+    std::cout << "_shared_object_name = " << _shared_object_name << std::endl;
+    //    shm_unlink(_shared_object_name.c_str());
     // https://man7.org/linux/man-pages/man3/shm_open.3.html
     // TODO: change magic number
-    const int file_descriptor = shm_open(_shared_object_name.data(), O_CREAT | O_EXCL | O_RDWR | O_TRUNC, 0600);
+    // last argument: Permission-Bits https://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html
+    const int file_descriptor = shm_open(_shared_object_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
 
     _mmap_size = sizeof(Buffer);
 
@@ -43,8 +46,9 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& source_path, cons
     }
     else
     {
+        _is_writer = true;
         std::cout << "WRITER." << std::endl;
-        const int writer_file_descriptor = shm_open(_shared_object_name.data(), O_RDWR, 0);
+        const int writer_file_descriptor = shm_open(_shared_object_name.data(), O_RDWR, S_IREAD);
         if (writer_file_descriptor > -1)
         {
             _shared_mem_ptr = mmap(NULL, _mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, writer_file_descriptor, 0);
@@ -60,14 +64,17 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& source_path, cons
         }
     }
 }
-bool SharedMemoryFacade::is_writer()
+
+bool SharedMemoryFacade::is_writer() const
 {
     return _is_writer;
 }
-void* SharedMemoryFacade::get_shared_mem_addr()
+
+void* SharedMemoryFacade::get_shared_mem_addr() const
 {
-    return nullptr;
+    return _shared_mem_ptr;
 }
+
 SharedMemoryFacade::~SharedMemoryFacade()
 {
     if (munmap(_shared_mem_ptr, _mmap_size) == -1)

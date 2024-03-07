@@ -100,7 +100,18 @@ int main(int argc, char* argv[])
     //        std::cerr << "sem doesn't work" << std::endl;
     //    }
 
-    SharedMemoryFacade sharedMemoryFacade(source_path, target_path);
+    // !!! check 14 times, it works
+    //    SharedMemoryFacade sharedMemoryFacade(source_path, target_path);
+    //    Buffer* buffer_ptr = static_cast<Buffer*>(sharedMemoryFacade.get_shared_mem_addr());
+    //    if (sharedMemoryFacade.is_writer())
+    //    {
+    //        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    //        std::cout << "Writer got size: " << buffer_ptr->size << std::endl;
+    //    }
+    //    else
+    //    {
+    //        buffer_ptr->size = 1996;
+    //    }
 
     return 0;
 }
