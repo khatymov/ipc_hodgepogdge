@@ -4,14 +4,29 @@
 
 #include "file_handler.h"
 
-FileHandler::FileHandler(const std::string& file_name, const std::string& flags)
+FileHandler::FileHandler(const std::string& source, const std::string& target, const bool is_writer)
 {
-    _file = std::fopen(file_name.data(), flags.data());
+    std::string flags;
+
+    // TODO rework, really bad..
+    if (is_writer)
+    {
+        flags = "w";
+        std::cout << "Writer writes to file: " << target << std::endl;
+        _file = std::fopen(target.data(), flags.data());
+    }
+    else
+    {
+        flags = "rb";
+        std::cout << "Reader reads a file: " << source << std::endl;
+        _file = std::fopen(source.data(), flags.data());
+    }
 }
 
 FileHandler::~FileHandler()
 {
     std::fclose(_file);
+    _file = nullptr;
 }
 
 void FileHandler::fread(Buffer* buffer)

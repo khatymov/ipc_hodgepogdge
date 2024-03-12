@@ -20,10 +20,10 @@ class Synchronizer
     Synchronizer& operator=(Synchronizer&&) = delete;
 
 public:
-    //! \brief default constructor.
+    //! \brief constructor.
     Synchronizer(bool is_writer, const std::string& shared_mem_name);
 
-    //! \brief default destructor.
+    //! \brief destructor.
     ~Synchronizer() = default;
 
     //! List of public variables.

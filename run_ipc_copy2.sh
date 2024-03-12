@@ -1,5 +1,6 @@
 #!/bin/bash
-app="./server"
-args="../data/source.txt ../data/target67.txt"
+app="./reader"
+args="../data/video.MP4 ../data/res5.mp4"
+#args="../data/source.txt ../data/dest10.txt"
 cd ./cmake-build-debug/
 $app $args & $app $args

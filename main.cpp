@@ -6,14 +6,16 @@
 #include <iostream>
 #include <span>
 
+#include "copier.h"
 #include "timer.h"
 
 namespace fs = std::filesystem;
 
 // TODO delete. only for testing
-#include "semaphore_proxy/semaphore_proxy.h"
-#include "shared_memory_handler.h"
-#include "synchronizer.h"
+
+// #include "semaphore_proxy/semaphore_proxy.h"
+// #include "shared_memory_facade.h"
+// #include "synchronizer.h"
 
 int main(int argc, char* argv[])
 {
@@ -43,6 +45,15 @@ int main(int argc, char* argv[])
     }
 
     Timer timer;
+
+    Copier copier(source_path, target_path);
+
+    copier.copy();
+
+    if (copier.is_same())
+    {
+        std::cerr << "Error copying file." << std::endl;
+    }
 
     // Testing
     //    SemaphoreProxy semReadyWriter(true, SharedMemoryHandler::get_unique_shared_name(source_path, target_path), "semReady");
@@ -97,6 +108,19 @@ int main(int argc, char* argv[])
     //    else
     //    {
     //        std::cerr << "sem doesn't work" << std::endl;
+    //    }
+
+    // !!! check 14 times, it works
+    //    SharedMemoryFacade sharedMemoryFacade(source_path, target_path);
+    //    Buffer* buffer_ptr = static_cast<Buffer*>(sharedMemoryFacade.get_shared_mem_addr());
+    //    if (sharedMemoryFacade.is_writer())
+    //    {
+    //        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    //        std::cout << "Writer got size: " << buffer_ptr->size << std::endl;
+    //    }
+    //    else
+    //    {
+    //        buffer_ptr->size = 1996;
     //    }
 
     return 0;
