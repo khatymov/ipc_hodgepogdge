@@ -5,7 +5,6 @@
  *
  */
 
-
 #pragma once
 
 #include <cstdio>
@@ -18,8 +17,12 @@
  */
 class FileHandler
 {
-public:
+    FileHandler(const FileHandler&) = delete;
+    FileHandler(FileHandler&&) = delete;
+    FileHandler& operator=(const FileHandler&) = delete;
+    FileHandler& operator=(FileHandler&&) = delete;
 
+public:
     //! \brief default constructor.
     explicit FileHandler(const std::string& file_name, const std::string& flags);
 
