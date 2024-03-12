@@ -6,16 +6,16 @@
 #include <iostream>
 #include <span>
 
+#include "copier.h"
 #include "timer.h"
 
 namespace fs = std::filesystem;
 
 // TODO delete. only for testing
-#include "copier.h"
-#include "semaphore_proxy/semaphore_proxy.h"
-#include "shared_memory_facade.h"
-#include "shared_memory_handler.h"
-#include "synchronizer.h"
+
+// #include "semaphore_proxy/semaphore_proxy.h"
+// #include "shared_memory_facade.h"
+// #include "synchronizer.h"
 
 int main(int argc, char* argv[])
 {
@@ -45,6 +45,15 @@ int main(int argc, char* argv[])
     }
 
     Timer timer;
+
+    Copier copier(source_path, target_path);
+
+    copier.copy();
+
+    if (copier.is_same())
+    {
+        std::cerr << "Error copying file." << std::endl;
+    }
 
     // Testing
     //    SemaphoreProxy semReadyWriter(true, SharedMemoryHandler::get_unique_shared_name(source_path, target_path), "semReady");

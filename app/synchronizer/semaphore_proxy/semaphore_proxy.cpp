@@ -52,6 +52,7 @@ bool SemaphoreProxy::get_signaled()
 
     if (watch_dog_result == -1)
     {
+        std::cerr << "Semaphore watch dog expired" << std::endl;
         return false;
     }
 

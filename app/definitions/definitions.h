@@ -5,8 +5,6 @@
 
 #pragma once
 
-#define STORAGE_SIZE 4096
-
 #include <algorithm>
 #include <string_view>
 

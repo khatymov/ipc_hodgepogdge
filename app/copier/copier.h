@@ -32,7 +32,9 @@ public:
 
     //! \brief copy from source file to target file
     //! it compares files via system tool and if files are same - return true
-    bool copy();
+    void copy();
+
+    bool is_same() const;
 
 private:
     //! List of private variables.

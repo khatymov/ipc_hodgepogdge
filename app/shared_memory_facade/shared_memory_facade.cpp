@@ -6,6 +6,7 @@
 #include "buffer.h"
 #include "definitions.h"
 
+#include <csignal>
 #include <fcntl.h> /* For O_* constants */
 #include <stdexcept>
 #include <sys/mman.h>
@@ -17,6 +18,7 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& source_path, cons
     _shared_object_name = get_unique_shared_name(source_path, target_path);
     // TODO delete
     std::cout << "_shared_object_name = " << _shared_object_name << std::endl;
+
     //    shm_unlink(_shared_object_name.c_str());
     // https://man7.org/linux/man-pages/man3/shm_open.3.html
     // TODO: change magic number
