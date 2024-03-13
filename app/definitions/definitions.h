@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <iostream>
 #include <string_view>
 
 static std::string getUniqueSharedName(const std::string_view& sourcePath, const std::string_view& targetPath)
@@ -15,3 +16,20 @@ static std::string getUniqueSharedName(const std::string_view& sourcePath, const
     sharedName = '/' + sharedName;
     return sharedName;
 }
+
+class MyException : public std::exception
+{
+public:
+    MyException(const char* Location) : m_exceptionLocation(Location)
+    {
+        m_exceptionLocation = __FILE__ + std::string(" ") + std::to_string(__LINE__) + std::string(" ") + m_exceptionLocation;
+    }
+
+    virtual const char* what() const noexcept override
+    {
+        return m_exceptionLocation.c_str();
+    }
+
+private:
+    std::string m_exceptionLocation;
+};

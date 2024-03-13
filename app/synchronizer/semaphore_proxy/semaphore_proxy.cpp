@@ -97,6 +97,6 @@ sem_t* SemaphoreProxy::_getReaderSemaphore(const char* path)
     if (sem == nullptr)
     {
         std::cerr << "Can not open a semaphore." << std::endl;
-        throw std::runtime_error("Reader can't attach a semaphore");
+        throw MyException("Reader can't attach a semaphore");
     }
 }
