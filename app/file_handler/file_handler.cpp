@@ -21,12 +21,15 @@ FileHandler::FileHandler(const std::string& source, const std::string& target, c
         std::cout << "Reader reads a file: " << source << std::endl;
         _file = std::fopen(source.data(), flags.data());
     }
+
+    std::cout << "FileHandler()" << std::endl;
 }
 
 FileHandler::~FileHandler()
 {
     std::fclose(_file);
     _file = nullptr;
+    std::cout << "~FileHandler()" << std::endl;
 }
 
 void FileHandler::fread(Buffer* buffer)

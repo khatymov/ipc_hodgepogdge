@@ -33,6 +33,8 @@ SemaphoreProxy::SemaphoreProxy(bool is_writer, const std::string& shared_mem_nam
     {
         _semaphore = _get_reader_semaphore(_semaphore_name.c_str());
     }
+
+    std::cout << "SemaphoreProxy()" << std::endl;
 }
 
 void SemaphoreProxy::set_signaled()
@@ -66,6 +68,7 @@ SemaphoreProxy::~SemaphoreProxy()
     {
         sem_unlink(_semaphore_name.c_str());
     }
+    std::cout << "~SemaphoreProxy()" << std::endl;
 }
 
 sem_t* SemaphoreProxy::_get_reader_semaphore(const char* path)

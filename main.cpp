@@ -46,13 +46,20 @@ int main(int argc, char* argv[])
 
     Timer timer;
 
-    Copier copier(source_path, target_path);
-
-    copier.copy();
-
-    if (copier.is_same())
+    try
     {
-        std::cerr << "Error copying file." << std::endl;
+        Copier copier(source_path, target_path);
+        copier.copy();
+
+        if (copier.is_same())
+        {
+            std::cerr << "Error copying file." << std::endl;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "Catch in " << __func__ << std::endl;
+        std::cerr << e.what() << std::endl;
     }
 
     // Testing

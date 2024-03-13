@@ -15,11 +15,9 @@ using namespace std;
 
 SharedMemoryFacade::SharedMemoryFacade(const std::string_view& source_path, const std::string_view& target_path)
 {
+    std::cout << "SharedMemoryFacade()" << std::endl;
     _shared_object_name = get_unique_shared_name(source_path, target_path);
-    // TODO delete
-    std::cout << "_shared_object_name = " << _shared_object_name << std::endl;
 
-    //    shm_unlink(_shared_object_name.c_str());
     // https://man7.org/linux/man-pages/man3/shm_open.3.html
     // TODO: change magic number
     // last argument: Permission-Bits https://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html
@@ -79,6 +77,7 @@ void* SharedMemoryFacade::get_shared_mem_addr() const
 
 SharedMemoryFacade::~SharedMemoryFacade()
 {
+    std::cout << "~SharedMemoryFacade()" << std::endl;
     if (munmap(_shared_mem_ptr, _mmap_size) == -1)
     {
         if (_is_writer)
