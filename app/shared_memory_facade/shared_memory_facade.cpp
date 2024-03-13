@@ -53,23 +53,24 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& sourcePath, const
             m_pSharedSem = mmap(NULL, m_mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, writerFileDescriptor, 0);
             if (m_pSharedSem == MAP_FAILED)
             {
-                std::cerr << "Client:Error mapping memory " << std::endl;
+                std::cerr << "Writer: Error mapping memory " << std::endl;
                 throw std::runtime_error("Writer: Error mapping memory");
             }
         }
         else
         {
             std::cerr << "Writer: Error to open shared memory " << std::endl;
+            throw std::runtime_error("Writer: Error to open shared memory");
         }
     }
 }
 
-bool SharedMemoryFacade::isWriter() const
+bool SharedMemoryFacade::isWriter() const noexcept
 {
     return m_fWriter;
 }
 
-void* SharedMemoryFacade::getSharedMemAddr() const
+void* SharedMemoryFacade::getSharedMemAddr() const noexcept
 {
     return m_pSharedSem;
 }

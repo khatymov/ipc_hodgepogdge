@@ -16,12 +16,12 @@ FileHandler::~FileHandler()
     std::cout << "~FileHandler()" << std::endl;
 }
 
-void FileHandler::fread(Buffer* pBuffer)
+void FileHandler::fread(Buffer* pBuffer) noexcept
 {
     pBuffer->size = std::fread(&pBuffer->data, sizeof(char), STORAGE_SIZE, m_pFile);
 }
 
-void FileHandler::fwrite(Buffer* pBuffer)
+void FileHandler::fwrite(Buffer* pBuffer) noexcept
 {
     std::fwrite(pBuffer->data, sizeof(char), pBuffer->size, m_pFile);
 }

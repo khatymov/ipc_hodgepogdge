@@ -28,7 +28,7 @@ public:
     ~SemaphoreProxy();
 
     //! \brief post semaphore signal
-    void setSignaled();
+    void setSignaled() noexcept;
 
     //! \brief get semaphore signaled
     //! Upon receiving a signal the func return true, otherwise - false.

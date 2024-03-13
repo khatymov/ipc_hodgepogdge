@@ -20,7 +20,6 @@ namespace fs = std::filesystem;
 
 int main(int argc, char* argv[])
 {
-
     if (argc < 3)
     {
         std::cout << "Usage: ./cpp_course path_to_source path_to_target." << std::endl;

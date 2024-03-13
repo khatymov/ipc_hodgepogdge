@@ -38,7 +38,7 @@ SemaphoreProxy::SemaphoreProxy(bool isWriter, const std::string& sharedMemName, 
     std::cout << "SemaphoreProxy()" << std::endl;
 }
 
-void SemaphoreProxy::setSignaled()
+void SemaphoreProxy::setSignaled() noexcept
 {
     sem_post(m_pSemaphore);
 }
@@ -104,4 +104,6 @@ sem_t* SemaphoreProxy::_getReaderSemaphore(const char* path)
         std::cerr << "Can not open a semaphore." << std::endl;
         throw MyException("Reader can't attach a semaphore");
     }
+
+    return sem;
 }

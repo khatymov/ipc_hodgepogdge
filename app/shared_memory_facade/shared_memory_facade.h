@@ -25,9 +25,9 @@ public:
     //! \brief destructor.
     ~SharedMemoryFacade();
 
-    bool isWriter() const;
+    bool isWriter() const noexcept;
 
-    void* getSharedMemAddr() const;
+    void* getSharedMemAddr() const noexcept;
 
 private:
     //! List of private variables.

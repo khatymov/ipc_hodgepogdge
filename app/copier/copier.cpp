@@ -78,7 +78,7 @@ void Copier::copy()
         m_readFromFileToSharedMemory();
     }
 }
-bool Copier::isSame() const
+bool Copier::isSame() const noexcept
 {
     const auto cmd = std::string("diff ") + m_sourcePath.data() + " " + m_targetPath.data() + std::string("| exit $(wc -l)");
     const int cmdResVal = std::system(cmd.c_str());

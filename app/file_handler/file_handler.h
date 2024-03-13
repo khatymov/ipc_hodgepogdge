@@ -25,9 +25,9 @@ class FileHandler
 public:
     FileHandler(const std::string& fileName, const std::string& flags);
 
-    void fread(Buffer* pBuffer);
+    void fread(Buffer* pBuffer) noexcept;
 
-    void fwrite(Buffer* pBuffer);
+    void fwrite(Buffer* pBuffer) noexcept;
 
     //! \brief default destructor.
     ~FileHandler();

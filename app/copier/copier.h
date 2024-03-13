@@ -34,7 +34,7 @@ public:
     //! it compares files via system tool and if files are same - return true
     void copy();
 
-    bool isSame() const;
+    bool isSame() const noexcept;
 
 private:
     //! List of private variables.
