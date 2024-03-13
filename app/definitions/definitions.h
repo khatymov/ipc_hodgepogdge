@@ -8,10 +8,10 @@
 #include <algorithm>
 #include <string_view>
 
-static std::string get_unique_shared_name(const std::string_view& source_path, const std::string_view& target_path)
+static std::string getUniqueSharedName(const std::string_view& sourcePath, const std::string_view& targetPath)
 {
-    std::string shared_name = std::string(source_path) + std::string(target_path);
-    std::replace(shared_name.begin(), shared_name.end(), '/', '_');
-    shared_name = '/' + shared_name;
-    return shared_name;
+    std::string sharedName = std::string(sourcePath) + std::string(targetPath);
+    std::replace(sharedName.begin(), sharedName.end(), '/', '_');
+    sharedName = '/' + sharedName;
+    return sharedName;
 }

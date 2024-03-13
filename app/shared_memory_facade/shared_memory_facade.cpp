@@ -13,32 +13,32 @@
 
 using namespace std;
 
-SharedMemoryFacade::SharedMemoryFacade(const std::string_view& source_path, const std::string_view& target_path)
+SharedMemoryFacade::SharedMemoryFacade(const std::string_view& sourcePath, const std::string_view& targetPath)
 {
     std::cout << "SharedMemoryFacade()" << std::endl;
-    _shared_object_name = get_unique_shared_name(source_path, target_path);
+    m_SharedObjectName = getUniqueSharedName(sourcePath, targetPath);
 
     // https://man7.org/linux/man-pages/man3/shm_open.3.html
     // TODO: change magic number
     // last argument: Permission-Bits https://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html
-    const int file_descriptor = shm_open(_shared_object_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
+    const int fileDescriptor = shm_open(m_SharedObjectName.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
 
-    _mmap_size = sizeof(Buffer);
+    m_mmapSize = sizeof(Buffer);
 
-    if (file_descriptor > -1)
+    if (fileDescriptor > -1)
     {
         std::cout << "READER." << std::endl;
 
-        _is_writer = false;
+        m_fWriter = false;
 
-        if (ftruncate(file_descriptor, _mmap_size) == -1)
+        if (ftruncate(fileDescriptor, m_mmapSize) == -1)
         {
             std::cerr << "Reader: Error during truncate memory" << std::endl;
             throw std::runtime_error("Error during truncate memory");
         }
         // https://man7.org/linux/man-pages/man2/mmap.2.html
-        _shared_mem_ptr = mmap(NULL, _mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor, 0);
-        if (_shared_mem_ptr == MAP_FAILED)
+        m_pSharedSem = mmap(NULL, m_mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor, 0);
+        if (m_pSharedSem == MAP_FAILED)
         {
             std::cerr << "Reader: Error mapping memory " << std::endl;
             throw std::runtime_error("Reader: Error mapping memory");
@@ -46,13 +46,13 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& source_path, cons
     }
     else
     {
-        _is_writer = true;
+        m_fWriter = true;
         std::cout << "WRITER." << std::endl;
-        const int writer_file_descriptor = shm_open(_shared_object_name.data(), O_RDWR, S_IREAD);
-        if (writer_file_descriptor > -1)
+        const int writerFileDescriptor = shm_open(m_SharedObjectName.data(), O_RDWR, S_IREAD);
+        if (writerFileDescriptor > -1)
         {
-            _shared_mem_ptr = mmap(NULL, _mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, writer_file_descriptor, 0);
-            if (_shared_mem_ptr == MAP_FAILED)
+            m_pSharedSem = mmap(NULL, m_mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, writerFileDescriptor, 0);
+            if (m_pSharedSem == MAP_FAILED)
             {
                 std::cerr << "Client:Error mapping memory " << std::endl;
                 throw std::runtime_error("Writer: Error mapping memory");
@@ -65,22 +65,22 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& source_path, cons
     }
 }
 
-bool SharedMemoryFacade::is_writer() const
+bool SharedMemoryFacade::isWriter() const
 {
-    return _is_writer;
+    return m_fWriter;
 }
 
-void* SharedMemoryFacade::get_shared_mem_addr() const
+void* SharedMemoryFacade::getSharedMemAddr() const
 {
-    return _shared_mem_ptr;
+    return m_pSharedSem;
 }
 
 SharedMemoryFacade::~SharedMemoryFacade()
 {
     std::cout << "~SharedMemoryFacade()" << std::endl;
-    if (munmap(_shared_mem_ptr, _mmap_size) == -1)
+    if (munmap(m_pSharedSem, m_mmapSize) == -1)
     {
-        if (_is_writer)
+        if (m_fWriter)
         {
             std::cerr << "Writer: Error unmapping memory " << std::endl;
         }
@@ -90,8 +90,8 @@ SharedMemoryFacade::~SharedMemoryFacade()
         }
     }
 
-    if (!_is_writer)
+    if (!m_fWriter)
     {
-        shm_unlink(_shared_object_name.c_str());
+        shm_unlink(m_SharedObjectName.c_str());
     }
 }

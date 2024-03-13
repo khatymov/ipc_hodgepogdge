@@ -5,24 +5,25 @@
 #include "copier.h"
 #include "definitions.h"
 
-Copier::Copier(const std::string_view& source_path, const std::string_view& target_path)
-    : _sharedMemoryFacade(source_path, target_path), _is_writer(_sharedMemoryFacade.is_writer()), _file(source_path.data(), target_path.data(), _is_writer),
-      _synchronizer(_is_writer, get_unique_shared_name(source_path, target_path)), _source_path(source_path), _target_path(target_path)
+Copier::Copier(const std::string_view& sourcePath, const std::string_view& targetPath)
+    : m_sharedMemoryFacade(sourcePath, targetPath), m_fWriter(m_sharedMemoryFacade.isWriter()),
+      m_file(m_fWriter ? targetPath.data() : sourcePath.data(), m_fWriter ? "w" : "rb"), m_synchronizer(m_fWriter, getUniqueSharedName(sourcePath, targetPath)),
+      m_sourcePath(sourcePath), m_targetPath(targetPath)
 {
 }
 
-void Copier::_read_from_file_to_shared_memory()
+void Copier::m_readFromFileToSharedMemory()
 {
-    Buffer* buf_ptr = static_cast<Buffer*>(_sharedMemoryFacade.get_shared_mem_addr());
+    Buffer* p_buf = static_cast<Buffer*>(m_sharedMemoryFacade.getSharedMemAddr());
     do
     {
-        _file.fread(buf_ptr);
+        m_file.fread(p_buf);
 
-        const bool everything_done = buf_ptr->size == 0;
+        const bool everything_done = p_buf->size == 0;
 
-        _synchronizer.sem_ready.set_signaled();
+        m_synchronizer.semReady.setSignaled();
 
-        if (!_synchronizer.sem_ack.get_signaled() or everything_done)
+        if (!m_synchronizer.semAck.getSignaled() or everything_done)
         {
             break;
         }
@@ -30,20 +31,20 @@ void Copier::_read_from_file_to_shared_memory()
     } while (true);
 }
 
-void Copier::_write_to_file_from_shared_memory()
+void Copier::m_writeToFileFromSharedMemory()
 {
-    Buffer* buf_ptr = static_cast<Buffer*>(_sharedMemoryFacade.get_shared_mem_addr());
+    Buffer* p_buf = static_cast<Buffer*>(m_sharedMemoryFacade.getSharedMemAddr());
     while (true)
     {
         // waiting when reader write data to shared memory
-        if (!_synchronizer.sem_ready.get_signaled())
+        if (!m_synchronizer.semReady.getSignaled())
         {
             break;
         }
         // we have buffer with data at that moment
-        const bool everything_done = buf_ptr->size == 0;
-        _file.fwrite(buf_ptr);
-        _synchronizer.sem_ack.set_signaled();
+        const bool everything_done = p_buf->size == 0;
+        m_file.fwrite(p_buf);
+        m_synchronizer.semAck.setSignaled();
 
         if (everything_done)
         {
@@ -54,18 +55,18 @@ void Copier::_write_to_file_from_shared_memory()
 
 void Copier::copy()
 {
-    if (_is_writer)
+    if (m_fWriter)
     {
-        _write_to_file_from_shared_memory();
+        m_writeToFileFromSharedMemory();
     }
     else
     {
-        _read_from_file_to_shared_memory();
+        m_readFromFileToSharedMemory();
     }
 }
-bool Copier::is_same() const
+bool Copier::isSame() const
 {
-    const auto cmd = std::string("diff ") + _source_path.data() + " " + _target_path.data() + std::string("| exit $(wc -l)");
-    const int cmd_res = std::system(cmd.c_str());
-    return (cmd_res == 0);
+    const auto cmd = std::string("diff ") + m_sourcePath.data() + " " + m_targetPath.data() + std::string("| exit $(wc -l)");
+    const int cmdResVal = std::system(cmd.c_str());
+    return (cmdResVal == 0);
 }

@@ -21,13 +21,13 @@ class Synchronizer
 
 public:
     //! \brief constructor.
-    Synchronizer(bool is_writer, const std::string& shared_mem_name);
+    Synchronizer(bool isWriter, const std::string& sharedMemName);
 
     //! \brief destructor.
     // TODO make default
     ~Synchronizer();
 
     //! List of public variables.
-    SemaphoreProxy sem_ready;
-    SemaphoreProxy sem_ack;
+    SemaphoreProxy semReady;
+    SemaphoreProxy semAck;
 };

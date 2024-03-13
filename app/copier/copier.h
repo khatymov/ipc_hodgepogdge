@@ -25,7 +25,7 @@ class Copier
 
 public:
     //! \brief default constructor.
-    Copier(const std::string_view& source_path, const std::string_view& target_path);
+    Copier(const std::string_view& sourcePath, const std::string_view& targetPath);
 
     //! \brief default destructor.
     ~Copier() = default;
@@ -34,18 +34,17 @@ public:
     //! it compares files via system tool and if files are same - return true
     void copy();
 
-    bool is_same() const;
+    bool isSame() const;
 
 private:
     //! List of private variables.
-    SharedMemoryFacade _sharedMemoryFacade;
-    bool _is_writer;
-    FileHandler _file;
-    Synchronizer _synchronizer;
+    SharedMemoryFacade m_sharedMemoryFacade;
+    const bool m_fWriter;
+    FileHandler m_file;
+    Synchronizer m_synchronizer;
+    const std::string_view& m_sourcePath;
+    const std::string_view& m_targetPath;
 
-    const std::string_view& _source_path;
-    const std::string_view& _target_path;
-
-    void _read_from_file_to_shared_memory();
-    void _write_to_file_from_shared_memory();
+    void m_readFromFileToSharedMemory();
+    void m_writeToFileFromSharedMemory();
 };

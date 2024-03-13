@@ -23,16 +23,15 @@ class FileHandler
     FileHandler& operator=(FileHandler&&) = delete;
 
 public:
-    //! \brief default constructor.
-    explicit FileHandler(const std::string& source, const std::string& target, const bool is_writer);
+    FileHandler(const std::string& fileName, const std::string& flags);
 
-    void fread(Buffer* buffer);
+    void fread(Buffer* pBuffer);
 
-    void fwrite(Buffer* buffer);
+    void fwrite(Buffer* pBuffer);
 
     //! \brief default destructor.
     ~FileHandler();
 
 private:
-    std::FILE* _file;
+    std::FILE* m_pFile;
 };

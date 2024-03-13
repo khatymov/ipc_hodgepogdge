@@ -20,19 +20,19 @@ class SharedMemoryFacade
 
 public:
     //! \brief constructor.
-    SharedMemoryFacade(const std::string_view& source_path, const std::string_view& target_path);
+    SharedMemoryFacade(const std::string_view& sourcePath, const std::string_view& targetPath);
 
     //! \brief destructor.
     ~SharedMemoryFacade();
 
-    bool is_writer() const;
+    bool isWriter() const;
 
-    void* get_shared_mem_addr() const;
+    void* getSharedMemAddr() const;
 
 private:
     //! List of private variables.
-    bool _is_writer;
-    size_t _mmap_size;
-    void* _shared_mem_ptr;
-    std::string _shared_object_name;
+    bool m_fWriter;
+    size_t m_mmapSize;
+    void* m_pSharedSem;
+    std::string m_SharedObjectName;
 };

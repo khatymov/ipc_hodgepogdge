@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
         Copier copier(source_path, target_path);
         copier.copy();
 
-        if (copier.is_same())
+        if (copier.isSame())
         {
             std::cerr << "Error copying file." << std::endl;
         }
@@ -63,10 +63,10 @@ int main(int argc, char* argv[])
     }
 
     // Testing
-    //    SemaphoreProxy semReadyWriter(true, SharedMemoryHandler::get_unique_shared_name(source_path, target_path), "semReady");
-    //    SemaphoreProxy semReadyReader(false, SharedMemoryHandler::get_unique_shared_name(source_path, target_path), "semReady");
+    //    SemaphoreProxy semReadyWriter(true, SharedMemoryHandler::getUniqueSharedName(source_path, target_path), "semReady");
+    //    SemaphoreProxy semReadyReader(false, SharedMemoryHandler::getUniqueSharedName(source_path, target_path), "semReady");
     //
-    //    if (!semReadyWriter.get_signaled())
+    //    if (!semReadyWriter.getSignaled())
     //    {
     //        std::cout << "sem works" << std::endl;
     //    }
@@ -75,21 +75,8 @@ int main(int argc, char* argv[])
     //        std::cerr << "sem doesn't work" << std::endl;
     //    }
     //
-    //    semReadyReader.set_signaled();
-    //    if (semReadyWriter.get_signaled())
-    //    {
-    //        std::cout << "sem works" << std::endl;
-    //    }
-    //    else
-    //    {
-    //        std::cerr << "sem doesn't work" << std::endl;
-    //    }
-
-    //    Synchronizer w_synchronizer(true, SharedMemoryHandler::get_unique_shared_name(source_path, target_path));
-    //    Synchronizer r_synchronizer(false, SharedMemoryHandler::get_unique_shared_name(source_path, target_path));
-    //
-    //    r_synchronizer.sem_ready.set_signaled();
-    //    if (w_synchronizer.sem_ready.get_signaled())
+    //    semReadyReader.setSignaled();
+    //    if (semReadyWriter.getSignaled())
     //    {
     //        std::cout << "sem works" << std::endl;
     //    }
@@ -98,7 +85,20 @@ int main(int argc, char* argv[])
     //        std::cerr << "sem doesn't work" << std::endl;
     //    }
 
-    //    if (!w_synchronizer.sem_ready.get_signaled())
+    //    Synchronizer w_synchronizer(true, SharedMemoryHandler::getUniqueSharedName(source_path, target_path));
+    //    Synchronizer r_synchronizer(false, SharedMemoryHandler::getUniqueSharedName(source_path, target_path));
+    //
+    //    r_synchronizer.semReady.setSignaled();
+    //    if (w_synchronizer.semReady.getSignaled())
+    //    {
+    //        std::cout << "sem works" << std::endl;
+    //    }
+    //    else
+    //    {
+    //        std::cerr << "sem doesn't work" << std::endl;
+    //    }
+
+    //    if (!w_synchronizer.semReady.getSignaled())
     //    {
     //        std::cout << "sem works" << std::endl;
     //    }
@@ -107,8 +107,8 @@ int main(int argc, char* argv[])
     //        std::cerr << "sem doesn't work" << std::endl;
     //    }
     //
-    //    w_synchronizer.sem_ack.set_signaled();
-    //    if (r_synchronizer.sem_ack.get_signaled())
+    //    w_synchronizer.semAck.setSignaled();
+    //    if (r_synchronizer.semAck.getSignaled())
     //    {
     //        std::cout << "sem works" << std::endl;
     //    }
@@ -119,8 +119,8 @@ int main(int argc, char* argv[])
 
     // !!! check 14 times, it works
     //    SharedMemoryFacade sharedMemoryFacade(source_path, target_path);
-    //    Buffer* buffer_ptr = static_cast<Buffer*>(sharedMemoryFacade.get_shared_mem_addr());
-    //    if (sharedMemoryFacade.is_writer())
+    //    Buffer* buffer_ptr = static_cast<Buffer*>(sharedMemoryFacade.getSharedMemAddr());
+    //    if (sharedMemoryFacade.isWriter())
     //    {
     //        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     //        std::cout << "Writer got size: " << buffer_ptr->size << std::endl;

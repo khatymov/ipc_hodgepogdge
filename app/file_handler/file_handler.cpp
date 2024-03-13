@@ -4,40 +4,24 @@
 
 #include "file_handler.h"
 
-FileHandler::FileHandler(const std::string& source, const std::string& target, const bool is_writer)
+FileHandler::FileHandler(const std::string& fileName, const std::string& flags) : m_pFile(std::fopen(fileName.data(), flags.data()))
 {
-    std::string flags;
-
-    // TODO rework, really bad..
-    if (is_writer)
-    {
-        flags = "w";
-        std::cout << "Writer writes to file: " << target << std::endl;
-        _file = std::fopen(target.data(), flags.data());
-    }
-    else
-    {
-        flags = "rb";
-        std::cout << "Reader reads a file: " << source << std::endl;
-        _file = std::fopen(source.data(), flags.data());
-    }
-
     std::cout << "FileHandler()" << std::endl;
 }
 
 FileHandler::~FileHandler()
 {
-    std::fclose(_file);
-    _file = nullptr;
+    std::fclose(m_pFile);
+    m_pFile = nullptr;
     std::cout << "~FileHandler()" << std::endl;
 }
 
-void FileHandler::fread(Buffer* buffer)
+void FileHandler::fread(Buffer* pBuffer)
 {
-    buffer->size = std::fread(&buffer->data, sizeof(char), STORAGE_SIZE, _file);
+    pBuffer->size = std::fread(&pBuffer->data, sizeof(char), STORAGE_SIZE, m_pFile);
 }
 
-void FileHandler::fwrite(Buffer* buffer)
+void FileHandler::fwrite(Buffer* pBuffer)
 {
-    std::fwrite(buffer->data, sizeof(char), buffer->size, _file);
+    std::fwrite(pBuffer->data, sizeof(char), pBuffer->size, m_pFile);
 }

@@ -17,13 +17,13 @@ using namespace std;
         exit(EXIT_FAILURE);                                                                                                                                    \
     } while (0)
 
-SemaphoreProxy::SemaphoreProxy(bool is_writer, const std::string& shared_mem_name, const std::string& sem_type) : _is_writer(is_writer)
+SemaphoreProxy::SemaphoreProxy(bool isWriter, const std::string& sharedMemName, const std::string& semaphoreType) : m_fWriter(isWriter)
 {
-    _semaphore_name = shared_mem_name + sem_type;
-    if (is_writer)
+    m_sSemaphoreName = sharedMemName + semaphoreType;
+    if (isWriter)
     {
-        _semaphore = sem_open(_semaphore_name.c_str(), O_CREAT | O_EXCL, 0644, 0);
-        if (_semaphore == nullptr)
+        m_pSemaphore = sem_open(m_sSemaphoreName.c_str(), O_CREAT | O_EXCL, 0644, 0);
+        if (m_pSemaphore == nullptr)
         {
             std::cerr << "Can't create semaphore for a writer. Semaphore already in use." << std::endl;
             throw std::runtime_error("Writer can't create a semaphore");
@@ -31,18 +31,18 @@ SemaphoreProxy::SemaphoreProxy(bool is_writer, const std::string& shared_mem_nam
     }
     else
     {
-        _semaphore = _get_reader_semaphore(_semaphore_name.c_str());
+        m_pSemaphore = _getReaderSemaphore(m_sSemaphoreName.c_str());
     }
 
     std::cout << "SemaphoreProxy()" << std::endl;
 }
 
-void SemaphoreProxy::set_signaled()
+void SemaphoreProxy::setSignaled()
 {
-    sem_post(_semaphore);
+    sem_post(m_pSemaphore);
 }
 
-bool SemaphoreProxy::get_signaled()
+bool SemaphoreProxy::getSignaled()
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
@@ -50,7 +50,7 @@ bool SemaphoreProxy::get_signaled()
 
     ts.tv_sec += 10; // Wait for up to 10 seconds
 
-    int watch_dog_result = sem_timedwait(_semaphore, &ts);
+    int watch_dog_result = sem_timedwait(m_pSemaphore, &ts);
 
     if (watch_dog_result == -1)
     {
@@ -63,15 +63,15 @@ bool SemaphoreProxy::get_signaled()
 
 SemaphoreProxy::~SemaphoreProxy()
 {
-    sem_close(_semaphore);
-    if (_is_writer)
+    sem_close(m_pSemaphore);
+    if (m_fWriter)
     {
-        sem_unlink(_semaphore_name.c_str());
+        sem_unlink(m_sSemaphoreName.c_str());
     }
     std::cout << "~SemaphoreProxy()" << std::endl;
 }
 
-sem_t* SemaphoreProxy::_get_reader_semaphore(const char* path)
+sem_t* SemaphoreProxy::_getReaderSemaphore(const char* path)
 {
     sem_t* sem;
     const int num_of_try = 3;

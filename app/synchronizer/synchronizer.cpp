@@ -8,8 +8,8 @@
 
 using namespace std;
 
-Synchronizer::Synchronizer(bool is_writer, const std::string& shared_mem_name)
-    : sem_ready(SemaphoreProxy(is_writer, shared_mem_name, string("ready"))), sem_ack(SemaphoreProxy(is_writer, shared_mem_name, string("ack")))
+Synchronizer::Synchronizer(bool isWriter, const std::string& sharedMemName)
+    : semReady(SemaphoreProxy(isWriter, sharedMemName, string("ready"))), semAck(SemaphoreProxy(isWriter, sharedMemName, string("ack")))
 {
     std::cout << "Synchronizer()" << std::endl;
 }
