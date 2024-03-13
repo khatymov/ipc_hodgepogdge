@@ -15,7 +15,6 @@ using namespace std;
 
 SharedMemoryFacade::SharedMemoryFacade(const std::string_view& sourcePath, const std::string_view& targetPath)
 {
-    std::cout << "SharedMemoryFacade()" << std::endl;
     m_SharedObjectName = getUniqueSharedName(sourcePath, targetPath);
 
     // https://man7.org/linux/man-pages/man3/shm_open.3.html
@@ -27,7 +26,7 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& sourcePath, const
 
     if (fileDescriptor > -1)
     {
-        std::cout << "READER." << std::endl;
+        std::cout << "READER SharedMemoryFacade()" << std::endl;
 
         m_fWriter = false;
 
@@ -47,7 +46,7 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& sourcePath, const
     else
     {
         m_fWriter = true;
-        std::cout << "WRITER." << std::endl;
+        std::cout << "WRITER. SharedMemoryFacade()" << std::endl;
         const int writerFileDescriptor = shm_open(m_SharedObjectName.data(), O_RDWR, S_IREAD);
         if (writerFileDescriptor > -1)
         {
@@ -77,7 +76,7 @@ void* SharedMemoryFacade::getSharedMemAddr() const
 
 SharedMemoryFacade::~SharedMemoryFacade()
 {
-    std::cout << "~SharedMemoryFacade()" << std::endl;
+
     if (munmap(m_pSharedSem, m_mmapSize) == -1)
     {
         if (m_fWriter)
@@ -92,6 +91,11 @@ SharedMemoryFacade::~SharedMemoryFacade()
 
     if (!m_fWriter)
     {
+        std::cout << "Reader: ~SharedMemoryFacade()" << std::endl;
         shm_unlink(m_SharedObjectName.c_str());
+    }
+    else
+    {
+        std::cout << "Writer: ~SharedMemoryFacade()" << std::endl;
     }
 }

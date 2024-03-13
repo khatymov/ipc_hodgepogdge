@@ -3,6 +3,7 @@
  */
 
 #include "semaphore_proxy.h"
+#include "definitions.h"
 
 #include <fcntl.h> /* For O_* constants */
 #include <iostream>
@@ -48,7 +49,7 @@ bool SemaphoreProxy::getSignaled()
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
         handle_error("clock_gettime");
 
-    ts.tv_sec += 10; // Wait for up to 10 seconds
+    ts.tv_sec += 3; // Wait for up to 3 seconds
 
     int watch_dog_result = sem_timedwait(m_pSemaphore, &ts);
 
@@ -66,9 +67,13 @@ SemaphoreProxy::~SemaphoreProxy()
     sem_close(m_pSemaphore);
     if (m_fWriter)
     {
+        std::cout << "Writer: ~SemaphoreProxy()" << std::endl;
         sem_unlink(m_sSemaphoreName.c_str());
     }
-    std::cout << "~SemaphoreProxy()" << std::endl;
+    else
+    {
+        std::cout << "Reader: ~SemaphoreProxy()" << std::endl;
+    }
 }
 
 sem_t* SemaphoreProxy::_getReaderSemaphore(const char* path)

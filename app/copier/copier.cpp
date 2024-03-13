@@ -14,6 +14,8 @@ Copier::Copier(const std::string_view& sourcePath, const std::string_view& targe
 
 void Copier::m_readFromFileToSharedMemory()
 {
+    int i = 0;
+
     Buffer* p_buf = static_cast<Buffer*>(m_sharedMemoryFacade.getSharedMemAddr());
     do
     {
@@ -23,6 +25,10 @@ void Copier::m_readFromFileToSharedMemory()
 
         m_synchronizer.semReady.setSignaled();
 
+        if (i++ == 5)
+        {
+            throw MyException("he he, in reader");
+        }
         if (!m_synchronizer.semAck.getSignaled() or everything_done)
         {
             break;
@@ -33,6 +39,8 @@ void Copier::m_readFromFileToSharedMemory()
 
 void Copier::m_writeToFileFromSharedMemory()
 {
+    int i = 0;
+
     Buffer* p_buf = static_cast<Buffer*>(m_sharedMemoryFacade.getSharedMemAddr());
     while (true)
     {
@@ -41,6 +49,12 @@ void Copier::m_writeToFileFromSharedMemory()
         {
             break;
         }
+
+        //        if (i++ == 4)
+        //        {
+        //            throw MyException("he he, in writer");
+        //        }
+
         // we have buffer with data at that moment
         const bool everything_done = p_buf->size == 0;
         m_file.fwrite(p_buf);

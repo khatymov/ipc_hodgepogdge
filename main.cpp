@@ -7,6 +7,7 @@
 #include <span>
 
 #include "copier.h"
+#include "definitions.h"
 #include "timer.h"
 
 namespace fs = std::filesystem;
@@ -48,7 +49,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        Copier copier(source_path, target_path);
+        Copier copier(sourcePath, targetPath);
         copier.copy();
 
         if (copier.isSame())
@@ -56,10 +57,18 @@ int main(int argc, char* argv[])
             std::cerr << "Error copying file." << std::endl;
         }
     }
-    catch (const std::exception& e)
+    catch (const MyException& e)
     {
         std::cout << "Catch in " << __func__ << std::endl;
         std::cerr << e.what() << std::endl;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
+    catch (...)
+    {
+        std::cout << "Catch undefined exception" << std::endl;
     }
 
     // Testing

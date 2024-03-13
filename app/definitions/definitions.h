@@ -22,7 +22,7 @@ class MyException : public std::exception
 public:
     MyException(const char* Location) : m_exceptionLocation(Location)
     {
-        m_exceptionLocation = __FILE__ + std::string(" ") + std::to_string(__LINE__) + std::string(" ") + m_exceptionLocation;
+        //        m_exceptionLocation = __FILE__ + std::string(" ") + std::to_string(__LINE__) + std::string(" ") + m_exceptionLocation;
     }
 
     virtual const char* what() const noexcept override
