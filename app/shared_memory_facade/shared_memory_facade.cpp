@@ -13,9 +13,13 @@
 
 using namespace std;
 
+extern void* gpSharedAddr;
+extern std::string gSharedObjectName;
+
 SharedMemoryFacade::SharedMemoryFacade(const std::string_view& sourcePath, const std::string_view& targetPath)
 {
     m_SharedObjectName = getUniqueSharedName(sourcePath, targetPath);
+    gSharedObjectName = m_SharedObjectName;
 
     // https://man7.org/linux/man-pages/man3/shm_open.3.html
     // TODO: change magic number
@@ -36,8 +40,8 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& sourcePath, const
             throw std::runtime_error("Error during truncate memory");
         }
         // https://man7.org/linux/man-pages/man2/mmap.2.html
-        m_pSharedSem = mmap(NULL, m_mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor, 0);
-        if (m_pSharedSem == MAP_FAILED)
+        m_pSharedAddr = mmap(NULL, m_mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor, 0);
+        if (m_pSharedAddr == MAP_FAILED)
         {
             std::cerr << "Reader: Error mapping memory " << std::endl;
             throw std::runtime_error("Reader: Error mapping memory");
@@ -50,8 +54,8 @@ SharedMemoryFacade::SharedMemoryFacade(const std::string_view& sourcePath, const
         const int writerFileDescriptor = shm_open(m_SharedObjectName.data(), O_RDWR, S_IREAD);
         if (writerFileDescriptor > -1)
         {
-            m_pSharedSem = mmap(NULL, m_mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, writerFileDescriptor, 0);
-            if (m_pSharedSem == MAP_FAILED)
+            m_pSharedAddr = mmap(NULL, m_mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, writerFileDescriptor, 0);
+            if (m_pSharedAddr == MAP_FAILED)
             {
                 std::cerr << "Writer: Error mapping memory " << std::endl;
                 throw std::runtime_error("Writer: Error mapping memory");
@@ -72,13 +76,13 @@ bool SharedMemoryFacade::isWriter() const noexcept
 
 void* SharedMemoryFacade::getSharedMemAddr() const noexcept
 {
-    return m_pSharedSem;
+    return m_pSharedAddr;
 }
 
 SharedMemoryFacade::~SharedMemoryFacade()
 {
 
-    if (munmap(m_pSharedSem, m_mmapSize) == -1)
+    if (munmap(m_pSharedAddr, m_mmapSize) == -1)
     {
         if (m_fWriter)
         {

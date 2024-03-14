@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <span>
+#include <sys/mman.h>
 
 #include "copier.h"
 #include "definitions.h"
@@ -13,11 +14,73 @@
 namespace fs = std::filesystem;
 
 // TODO delete. only for testing
+bool gfWriter;
+void* gpSharedAddr;
+std::string gSharedObjectName;
+std::FILE* gpFile;
+
+sem_t* pSemaphoreReady;
+sem_t* pSemaphoreAck;
+
+std::string SemaphoreReadyName;
+std::string SemaphoreAckName;
 
 // #include "semaphore_proxy/semaphore_proxy.h"
 // #include "shared_memory_facade.h"
 // #include "synchronizer.h"
+void myTerminate()
+{
+    std::cout << std::boolalpha;
+    std::cout << "gfWriter = " << gfWriter << std::endl;
 
+    if (!gpSharedAddr and munmap(gpSharedAddr, sizeof(Buffer)) == -1)
+    {
+        if (gfWriter)
+        {
+            std::cerr << "myTerminate() Writer: Error unmapping memory " << std::endl;
+        }
+        else
+        {
+            std::cerr << "myTerminate() Reader: Error unmapping memory " << std::endl;
+        }
+    }
+
+    shm_unlink(gSharedObjectName.c_str());
+
+    if (gpFile)
+    {
+        std::fclose(gpFile);
+    }
+
+    bool is_ready_exists = false;
+    if (pSemaphoreReady)
+    {
+        is_ready_exists = true;
+        sem_close(pSemaphoreReady);
+    }
+
+    bool is_ack_exists = false;
+    if (pSemaphoreAck)
+    {
+        is_ack_exists = true;
+        sem_close(pSemaphoreAck);
+    }
+
+    if (gfWriter and is_ready_exists)
+    {
+        std::cout << "myTerminate() Writer: ~SemaphoreProxy() unlink" << std::endl;
+        sem_unlink(SemaphoreReadyName.c_str());
+    }
+
+    if (gfWriter and is_ack_exists)
+    {
+        std::cout << "myTerminate() Writer: ~SemaphoreProxy() unlink" << std::endl;
+        sem_unlink(SemaphoreAckName.c_str());
+    }
+
+    std::cerr << "myTerminate() Finish" << std::endl;
+    std::abort();
+}
 int main(int argc, char* argv[])
 {
     if (argc < 3)
@@ -46,29 +109,30 @@ int main(int argc, char* argv[])
 
     Timer timer;
 
-    try
-    {
-        Copier copier(sourcePath, targetPath);
-        copier.copy();
+    //    try
+    //    {
+    std::set_terminate(myTerminate);
+    Copier copier(sourcePath, targetPath);
+    copier.copy();
 
-        if (copier.isSame())
-        {
-            std::cerr << "Error copying file." << std::endl;
-        }
-    }
-    catch (const MyException& e)
+    if (copier.isSame())
     {
-        std::cout << "Catch in " << __func__ << std::endl;
-        std::cerr << e.what() << std::endl;
+        std::cerr << "Error copying file." << std::endl;
     }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-    }
-    catch (...)
-    {
-        std::cout << "Catch undefined exception" << std::endl;
-    }
+    //    }
+    //    catch (const MyException& e)
+    //    {
+    //        std::cout << "Catch in " << __func__ << std::endl;
+    //        std::cerr << e.what() << std::endl;
+    //    }
+    //    catch (const std::exception& e)
+    //    {
+    //        std::cerr << e.what() << std::endl;
+    //    }
+    //    catch (...)
+    //    {
+    //        std::cout << "Catch undefined exception" << std::endl;
+    //    }
 
     // Testing
     //    SemaphoreProxy semReadyWriter(true, SharedMemoryHandler::getUniqueSharedName(source_path, target_path), "semReady");

@@ -5,11 +5,14 @@
 #include "copier.h"
 #include "definitions.h"
 
+extern bool gfWriter;
+
 Copier::Copier(const std::string_view& sourcePath, const std::string_view& targetPath)
     : m_sharedMemoryFacade(sourcePath, targetPath), m_fWriter(m_sharedMemoryFacade.isWriter()),
       m_file(m_fWriter ? targetPath.data() : sourcePath.data(), m_fWriter ? "w" : "rb"), m_synchronizer(m_fWriter, getUniqueSharedName(sourcePath, targetPath)),
       m_sourcePath(sourcePath), m_targetPath(targetPath)
 {
+    gfWriter = m_fWriter;
 }
 
 void Copier::m_readFromFileToSharedMemory()
@@ -50,10 +53,10 @@ void Copier::m_writeToFileFromSharedMemory()
             break;
         }
 
-        //        if (i++ == 4)
-        //        {
-        //            throw MyException("he he, in writer");
-        //        }
+        if (i++ == 4)
+        {
+            throw MyException("he he, in writer");
+        }
 
         // we have buffer with data at that moment
         const bool everything_done = p_buf->size == 0;

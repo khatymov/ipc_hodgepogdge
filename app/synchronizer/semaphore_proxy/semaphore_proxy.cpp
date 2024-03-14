@@ -18,6 +18,12 @@ using namespace std;
         exit(EXIT_FAILURE);                                                                                                                                    \
     } while (0)
 
+extern sem_t* pSemaphoreReady;
+extern sem_t* pSemaphoreAck;
+
+extern std::string SemaphoreReadyName;
+extern std::string SemaphoreAckName;
+
 SemaphoreProxy::SemaphoreProxy(bool isWriter, const std::string& sharedMemName, const std::string& semaphoreType) : m_fWriter(isWriter)
 {
     m_sSemaphoreName = sharedMemName + semaphoreType;
@@ -33,6 +39,17 @@ SemaphoreProxy::SemaphoreProxy(bool isWriter, const std::string& sharedMemName, 
     else
     {
         m_pSemaphore = _getReaderSemaphore(m_sSemaphoreName.c_str());
+    }
+
+    if (semaphoreType == string("ready"))
+    {
+        pSemaphoreReady = m_pSemaphore;
+        SemaphoreReadyName = m_sSemaphoreName;
+    }
+    else if (semaphoreType == string("ack"))
+    {
+        pSemaphoreAck = m_pSemaphore;
+        SemaphoreAckName = m_sSemaphoreName;
     }
 
     std::cout << "SemaphoreProxy()" << std::endl;
@@ -79,10 +96,10 @@ SemaphoreProxy::~SemaphoreProxy()
 sem_t* SemaphoreProxy::_getReaderSemaphore(const char* path)
 {
     sem_t* sem;
-    const int num_of_try = 3;
+    const int numOfTry = 3;
     int i = 0;
     // 3 times
-    while (i != num_of_try)
+    while (i != numOfTry)
     {
         sem = sem_open(path, 0, 0644, 0);
         i++;
